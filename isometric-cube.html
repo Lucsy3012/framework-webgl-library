@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <script src="js/three.js"></script>
+    <script type="module">
+
+        // import * as THREE from './js/three.js';
+        import { OrbitControls } from './js/OrbitControls.js';
+
+        var container;
+        var camera, scene, renderer, controls;
+
+        var cubeGeometry, cubeMaterial, cube;
+        var planeGeometry, planeMaterial, plane;
+
+        init();
+        sceneAnimation();
+
+        // Initiating Scene
+        function init() {
+
+            // INIT Scene
+            // --------------------------------------
+
+            scene = new THREE.Scene();
+
+            // INIT Camera
+            // --------------------------------------
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 1000);
+            camera.position.set(8, 8, 8);
+            camera.rotation.set(-45, 35, 30);
+
+            // INIT Renderer
+            // --------------------------------------
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor('#52504c');
+
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            container = document.getElementById('canvas-container');
+            container.appendChild( renderer.domElement );
+
+            // INIT Options
+            // --------------------------------------
+
+            // Grid
+            // addGrid();
+
+            // Lights
+            addLights();
+
+            // Controls
+            addControls();
+
+            // Create box
+            sceneCube();
+            sceneFloor();
+        }
+
+
+        // Rendering the scene
+        function sceneAnimation() {
+            requestAnimationFrame(sceneAnimation);
+
+            // Animation
+            sceneCubeAnimation(cube);
+
+            renderer.render(scene, camera);
+        }
+
+        function addGrid() {
+            var gridHelper = new THREE.GridHelper(0, 0);
+            scene.add(gridHelper);
+        }
+
+        function addLights() {
+            var ambientLight = new THREE.AmbientLight(0xffa030, 0.1);
+            scene.add(ambientLight);
+
+            var pointLight = new THREE.PointLight(0xffa030, 1, 0, 1);
+            pointLight.position.set(3, 4, 2);
+            scene.add(pointLight);
+
+            var directionalLight = new THREE.DirectionalLight(0xffffff, 0.75, 100);
+            directionalLight.position.set(0, 4, 0);
+            directionalLight.castShadow = true;
+
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+
+            scene.add(directionalLight);
+        }
+
+        function addControls() {
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.screenSpacePanning = true;
+            controls.minDistance = 2;
+            controls.maxDistance = 60;
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        function sceneCube() {
+
+            cubeGeometry    = new THREE.BoxGeometry();
+            cubeMaterial    = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
+            cube            = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+            cube.castShadow = true;
+            cube.receiveShadow = false;
+
+            cube.position.y = 1.5;
+
+            scene.add(cube);
+        }
+
+        function sceneFloor() {
+
+            planeGeometry   = new THREE.PlaneGeometry(100, 100);
+            planeMaterial   = new THREE.MeshStandardMaterial( {color: 0x52504c} );
+            plane           = new THREE.Mesh(planeGeometry, planeMaterial);
+
+            plane.castShadow = false;
+            plane.receiveShadow = true;
+
+            plane.position.y = -1.5;
+            plane.rotation.x = -Math.PI / 2;
+
+            scene.add(plane);
+        }
+
+        function sceneCubeAnimation(el) {
+            el.rotation.x += 0.0075;
+            el.rotation.y += 0.01;
+
+            if (el.scale.x < 2) {
+                el.scale.x += 0.005;
+                el.scale.y += 0.005;
+                el.scale.z += 0.005;
+            }
+        }
+
+    </script>
+
+</body>
+</html>

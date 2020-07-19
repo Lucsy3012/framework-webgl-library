@@ -82,7 +82,7 @@
         // Create box
         addSphere(0.125);
 
-        // Create Fog
+        // Create fog
         scene.fog = new THREE.FogExp2(0xFFFF00, 0.01);
 
         // Update renderer and camera when resizing
@@ -96,8 +96,9 @@
         cameraRotationX = camera.rotation.x;
         cameraRotationZ = camera.rotation.z;
 
-        // window.addEventListener('scroll', function() { cameraPaningX(-0.02) }, false);
-        window.addEventListener('scroll', function() { cameraPaningY() }, false);
+        window.addEventListener('scroll', function() { cameraPaningX(); }, true);
+        window.addEventListener('scroll', function() { cameraPaningY(); }, true);
+        window.addEventListener('scroll', function() { cameraPaningZ(); }, true);
     }
 
 
@@ -132,31 +133,65 @@
 
     }
 
-    function cameraPaningX(rate = 0.02, disableOrbiting = true) {
+    function cameraPaningX(positionRate = 0.02, rotationRate = -0.0002, scrollDirectionY = true, disableOrbiting = true) {
+        let scrollPosition = window.pageYOffset;
 
-        if (disableOrbiting === true) {
-            container.classList.add('no-orbiting');
+        if (scrollDirectionY !== true) {
+            scrollPosition = window.pageXOffset;
         }
-
-        if (rate) {
-            camera.position.x = cameraX + (window.pageYOffset * rate);
-        }
-
-    }
-
-    function cameraPaningY(positionRate = 0.02, rotationRate = -0.0002, disableOrbiting = true) {
 
         if (disableOrbiting === true) {
             container.classList.add('no-orbiting');
         }
 
         if (positionRate) {
-            camera.position.y = cameraY + (window.pageYOffset * positionRate);
+            camera.position.x = cameraX + (scrollPosition * positionRate);
         }
 
         if (rotationRate) {
-            camera.rotation.x = cameraRotationX + window.pageYOffset * rotationRate;
-            console.log(camera.rotation.x);
+            camera.rotation.y = cameraRotationY + scrollPosition * rotationRate;
+        }
+
+    }
+
+    function cameraPaningY(positionRate = 0.02, rotationRate = -0.0002, scrollDirectionY = true, disableOrbiting = true) {
+        let scrollPosition = window.pageYOffset;
+
+        if (scrollDirectionY !== true) {
+            scrollPosition = window.pageXOffset;
+        }
+
+        if (disableOrbiting === true) {
+            container.classList.add('no-orbiting');
+        }
+
+        if (positionRate) {
+            camera.position.y = cameraY + (scrollPosition * positionRate);
+        }
+
+        if (rotationRate) {
+            camera.rotation.x = cameraRotationX + scrollPosition * rotationRate;
+        }
+
+    }
+
+    function cameraPaningZ(positionRate = 0.02, rotationRate = -0.0002, scrollDirectionY = true, disableOrbiting = true) {
+        let scrollPosition = window.pageYOffset;
+
+        if (scrollDirectionY !== true) {
+            scrollPosition = window.pageXOffset;
+        }
+
+        if (disableOrbiting === true) {
+            container.classList.add('no-orbiting');
+        }
+
+        if (positionRate) {
+            camera.position.z = cameraZ + (scrollPosition * positionRate);
+        }
+
+        if (rotationRate) {
+            camera.rotation.z = cameraRotationZ + scrollPosition * rotationRate;
         }
 
     }
@@ -180,7 +215,7 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.screenSpacePanning = true;
         controls.minDistance = 2;
-        controls.maxDistance = 30;
+        controls.maxDistance = 60;
         controls.target.set(0, 0, 0);
         controls.update();
     }
