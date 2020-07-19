@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <script src="js/three.js"></script>
+    <script>
+
+        // Initiating Scene
+        var scene       = new THREE.Scene();
+        var camera      = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
+        var renderer    = new THREE.WebGLRenderer();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        document.body.appendChild(renderer.domElement);
+
+
+        // Camera
+        // --------------------------------------
+        var cameraX = 0, cameraY = 0, cameraZ = 100;
+
+        camera.position.set(cameraX, cameraY, cameraZ);
+        camera.lookAt(0, 0, 0);
+
+
+        // Create box
+        // --------------------------------------
+        var material    = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
+        var points1      = [];
+        var points2      = [];
+
+        points1.push(new THREE.Vector3(-10, 0, 0));
+        points1.push(new THREE.Vector3(0, 10, 0));
+        points1.push(new THREE.Vector3(10, 0, 0));
+        points1.push(new THREE.Vector3(0, -10, 0));
+        points1.push(new THREE.Vector3(-10, 0, 0));
+
+        points2.push(new THREE.Vector3(-10, 0, -20));
+        points2.push(new THREE.Vector3(0, 10, -20));
+        points2.push(new THREE.Vector3(10, 0, -20));
+        points2.push(new THREE.Vector3(0, -10, -20));
+        points2.push(new THREE.Vector3(-10, 0, -20));
+
+        var geometry1   = new THREE.BufferGeometry().setFromPoints(points1);
+        var geometry2   = new THREE.BufferGeometry().setFromPoints(points2);
+
+        var line1       = new THREE.Line(geometry1, material);
+        var line2       = new THREE.Line(geometry2, material);
+
+        scene.add(line1, line2);
+
+
+
+        // Rendering the scene
+        function animate() {
+            requestAnimationFrame(animate);
+
+            cameraZ += 0.1;
+
+            camera.position.set(cameraX, cameraY, cameraZ);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+
+        // Update renderer and camera when resizing
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+
+
+
+    </script>
+
+</body>
+</html>

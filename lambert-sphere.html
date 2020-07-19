@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <script src="js/three.js"></script>
+    <script>
+
+        // Initiating Scene
+        var scene       = new THREE.Scene();
+        var camera      = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        var renderer    = new THREE.WebGLRenderer();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor('#000');
+
+        document.body.appendChild(renderer.domElement);
+
+
+        // Create sphere
+        // --------------------------------------
+        var sphereGeometry  = new THREE.SphereBufferGeometry(2, 128, 128);
+        var sphereMaterial  = new THREE.MeshLambertMaterial( { color: 0xffff40 } );
+        var sphere          = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+        scene.add(sphere);
+
+
+        // Move camera back
+        camera.position.z = 5;
+
+
+        // Lights
+        // --------------------------------------
+        var light = new THREE.PointLight(0xffffff, 1, 500);
+        light.position.set(10, 0, 25);
+
+        scene.add(light);
+
+
+        // Rendering the scene
+        function animate() {
+            requestAnimationFrame(animate);
+
+            sphere.rotation.x += 0.01;
+            sphere.rotation.y += 0.01;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+
+        // Update renderer and camera when resizing
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+
+
+    </script>
+
+</body>
+</html>

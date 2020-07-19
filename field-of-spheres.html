@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        body { margin: 0; min-height: 4000px; overflow-x: hidden; }
+        canvas { display: block; background: linear-gradient(39deg, rgba(15,28,84,1) 0%, rgba(3,1,15,1) 100%); }
+        #canvas-container { position: sticky; top: 0; }
+        #canvas-container.no-orbiting canvas { pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<script src="js/three.js"></script>
+<script type="module">
+
+    // import * as THREE from './js/three.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+
+    var container;
+    var camera, scene, renderer, controls;
+
+    // Project Variables
+    var separation = 5,
+        lengthX = 120,
+        lengthY = 120;
+
+    var particles = [],
+        particle, material, geometry,
+        count = 0;
+
+    // Camera Variables
+    var cameraX = lengthX * 2, cameraRotationX,
+        cameraY = lengthY * 0.1, cameraRotationY,
+        cameraZ = 1000, cameraRotationZ;
+
+    init();
+    sceneAnimation();
+
+    // Initiating Scene
+    function init() {
+
+        // INIT Scene
+        // --------------------------------------
+
+        scene = new THREE.Scene();
+
+
+        // INIT Camera
+        // --------------------------------------
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera.position.set(cameraX, cameraY, cameraZ);
+
+        // INIT Renderer
+        // --------------------------------------
+
+        renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearAlpha(0);
+
+        container = document.getElementById('canvas-container');
+        container.appendChild( renderer.domElement );
+
+        // INIT Options
+        // --------------------------------------
+
+        // Grid
+        // addGrid();
+
+        // Lights
+        addLights();
+
+        // Controls
+        addControls();
+
+        // Create box
+        addSphere(0.125);
+
+        // Create Fog
+        scene.fog = new THREE.FogExp2(0xFFFF00, 0.01);
+
+        // Update renderer and camera when resizing
+        window.addEventListener('resize', onWindowResize, false);
+
+        // Camera Update
+        cameraY = camera.position.y;
+        cameraX = camera.position.x;
+        cameraZ = camera.position.z;
+        cameraRotationY = camera.rotation.y;
+        cameraRotationX = camera.rotation.x;
+        cameraRotationZ = camera.rotation.z;
+
+        // window.addEventListener('scroll', function() { cameraPaningX(-0.02) }, false);
+        window.addEventListener('scroll', function() { cameraPaningY() }, false);
+    }
+
+
+    // Rendering the scene
+    function sceneAnimation() {
+        requestAnimationFrame(sceneAnimation);
+
+        // Animation
+        let i = 0, ix, iy;
+
+        for (ix = 0; ix < lengthX; ++ix) {
+
+            for (iy = 0; iy < lengthY; ++iy) {
+
+                particle = particles[i++];
+
+                sceneWaveAnimation(particle, count, ix, iy);
+            }
+        }
+
+        count += 0.1;
+
+        renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+    }
+
+    function cameraPaningX(rate = 0.02, disableOrbiting = true) {
+
+        if (disableOrbiting === true) {
+            container.classList.add('no-orbiting');
+        }
+
+        if (rate) {
+            camera.position.x = cameraX + (window.pageYOffset * rate);
+        }
+
+    }
+
+    function cameraPaningY(positionRate = 0.02, rotationRate = -0.0002, disableOrbiting = true) {
+
+        if (disableOrbiting === true) {
+            container.classList.add('no-orbiting');
+        }
+
+        if (positionRate) {
+            camera.position.y = cameraY + (window.pageYOffset * positionRate);
+        }
+
+        if (rotationRate) {
+            camera.rotation.x = cameraRotationX + window.pageYOffset * rotationRate;
+            console.log(camera.rotation.x);
+        }
+
+    }
+
+    function addGrid() {
+        var gridHelper = new THREE.GridHelper(0, 0);
+        scene.add(gridHelper);
+    }
+
+    function addLights() {
+        var ambientLight = new THREE.AmbientLight(0xffffff, 1);
+        scene.add(ambientLight);
+
+        var pointLight = new THREE.PointLight(0xffffff, 1, 500);
+        pointLight.position.set(0, 0, 50);
+
+        scene.add(pointLight);
+    }
+
+    function addControls() {
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.screenSpacePanning = true;
+        controls.minDistance = 2;
+        controls.maxDistance = 30;
+        controls.target.set(0, 0, 0);
+        controls.update();
+    }
+
+    function addSphere(size) {
+        geometry        = new THREE.SphereBufferGeometry(size, 64, 64);
+        material        = new THREE.MeshLambertMaterial( { color: 0xffffff } );
+
+        let i = 0, ix, iy;
+
+        for (ix = 0; ix < lengthX; ++ix) {
+
+            for (iy = 0; iy < lengthY; ++iy) {
+
+                particle = particles[i++] = new THREE.Mesh(geometry, material);
+                particle.position.x = separation * ix - (separation * lengthX * 0.5);
+                particle.position.z = separation * iy - (separation * lengthY * 0.5);
+
+                scene.add(particle);
+
+            }
+
+        }
+
+    }
+
+    function sceneWaveAnimation(el, i, ix, iy) {
+        var mathFunctionX = Math.sin((ix + i) * 0.175) * 2;
+        var mathFunctionY = Math.sin((iy + i) * 0.350) * 2;
+
+        el.position.y = mathFunctionX + mathFunctionY;
+        el.scale.x = el.scale.y = el.scale.z = ((mathFunctionX + 2) / 4) + ((mathFunctionY + 2) / 4);
+    }
+
+</script>
+
+</body>
+</html>
