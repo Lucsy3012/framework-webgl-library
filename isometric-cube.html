@@ -22,6 +22,8 @@
         var container;
         var camera, scene, renderer, controls;
 
+        var ambientLight, pointLight, directionalLight, cameraLight;
+
         var cubeGeometry, cubeMaterial, cube;
         var planeGeometry, planeMaterial, plane;
 
@@ -73,6 +75,8 @@
             // Create box
             sceneCube();
             sceneFloor();
+
+            window.addEventListener('mousemove', function() { addLightCameraSync(cameraLight) }, false);
         }
 
 
@@ -91,22 +95,34 @@
             scene.add(gridHelper);
         }
 
-        function addLights() {
-            var ambientLight = new THREE.AmbientLight(0xffa030, 0.1);
+        function addLights(ambientColor = 0xffa030, directionalColor = 0xffffff) {
+            ambientLight = new THREE.AmbientLight(ambientColor, 0.1);
             scene.add(ambientLight);
 
-            var pointLight = new THREE.PointLight(0xffa030, 1, 0, 1);
+            pointLight = new THREE.PointLight(ambientColor, 0.9, 0, 1);
             pointLight.position.set(3, 4, 2);
             scene.add(pointLight);
 
-            var directionalLight = new THREE.DirectionalLight(0xffffff, 0.75, 100);
+            cameraLight = new THREE.PointLight(ambientColor, 0.6, 0, 1);
+            cameraLight.position.set(8, 8, 8);
+            cameraLight.rotation.set(-45, 35, 30);
+            scene.add(cameraLight);
+
+            directionalLight = new THREE.DirectionalLight(directionalColor, 0.75, 100);
             directionalLight.position.set(0, 4, 0);
             directionalLight.castShadow = true;
-
             directionalLight.shadow.mapSize.width = 2048;
             directionalLight.shadow.mapSize.height = 2048;
-
             scene.add(directionalLight);
+        }
+
+        function addLightCameraSync(light = cameraLight) {
+            light.position.x = camera.position.x;
+            light.position.y = camera.position.y;
+            light.position.z = camera.position.z;
+            light.rotation.x = camera.rotation.x;
+            light.rotation.y = camera.rotation.y;
+            light.rotation.z = camera.rotation.z;
         }
 
         function addControls() {
