@@ -5,8 +5,9 @@
     <title>Title</title>
 
     <style>
-        body { margin: 0; }
+        body { margin: 0; min-height: 4000px; overflow-x: hidden; }
         canvas { display: block; }
+        #canvas-container { position: sticky; top: 0; }
     </style>
 </head>
 <body>
@@ -23,8 +24,8 @@
         var camera, scene, renderer, controls;
 
         var ambientLight, pointLight, directionalLight, cameraLight, pointerLight;
+        var bindScrollY = 0.1 ;
 
-        var cubeGeometry, cubeMaterial, cube;
         var planeGeometry, planeMaterial, plane;
 
         init();
@@ -41,10 +42,10 @@
             // INIT Camera
             // --------------------------------------
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-            // camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 1000);
-            camera.position.set(8, 8, 8);
-            camera.rotation.set(-45, 35, 30);
+            // camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 1000);
+            camera.position.set(0, 0, 10);
+            camera.rotation.set(0, 0, 0);
 
             // INIT Renderer
             // --------------------------------------
@@ -70,22 +71,19 @@
             addLights();
 
             // Controls
-            addControls();
+            // addControls();
 
             // Create box
-            sceneCube();
             sceneFloor();
 
-            window.addEventListener('mousemove', function() { lightCameraSync(cameraLight) }, false);
+            window.addEventListener('mousemove', function(e) { flatObjPointerSync(e) }, false);
+            window.addEventListener('scroll', function(e) { changeScrollingValue(0.001) }, false);
         }
 
 
         // Rendering the scene
         function sceneAnimation() {
             requestAnimationFrame(sceneAnimation);
-
-            // Animation
-            sceneCubeAnimation(cube);
 
             renderer.render(scene, camera);
         }
@@ -99,21 +97,14 @@
             ambientLight = new THREE.AmbientLight(ambientColor, 0.1);
             scene.add(ambientLight);
 
-            pointLight = new THREE.PointLight(ambientColor, 0.9, 0, 1);
-            pointLight.position.set(3, 4, 2);
-            scene.add(pointLight);
-
-            cameraLight = new THREE.PointLight(ambientColor, 0.6, 0, 1);
-            cameraLight.position.set(8, 8, 8);
-            cameraLight.rotation.set(-45, 35, 30);
-            scene.add(cameraLight);
-
-            directionalLight = new THREE.DirectionalLight(directionalColor, 0.75, 100);
-            directionalLight.position.set(0, 4, 0);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            scene.add(directionalLight);
+            pointerLight = new THREE.PointLight(ambientColor, 2, 0, 1);
+            // pointerLight = new THREE.DirectionalLight(ambientColor, 0.75, 100);
+            pointerLight.position.set(0, 0, 1);
+            pointerLight.rotation.set(0, 0, 0);
+            pointerLight.castShadow = true;
+            pointerLight.shadow.mapSize.width = 2048;
+            pointerLight.shadow.mapSize.height = 2048;
+            scene.add(pointerLight);
         }
 
         function lightCameraSync(light = cameraLight) {
@@ -125,6 +116,24 @@
             light.rotation.z = camera.rotation.z;
         }
 
+        function flatObjPointerSync(e, obj = pointerLight, minX = -10, maxY = 10, maxX = 10, minY = -10) {
+            var deltaX = (minX - maxX) * -1;
+            var deltaY = (minY - maxY) * -1;
+
+            var positionX = deltaX / window.innerWidth * e.x - maxX;
+            var positionY = (deltaY / window.innerHeight * e.y - maxY) * -1;
+
+            obj.position.x = positionX;
+            obj.position.y = positionY;
+            obj.position.z = bindScrollY;
+
+            console.log(obj.position);
+        }
+
+        function changeScrollingValue(multiplicator = 0.01) {
+            bindScrollY = window.pageYOffset * multiplicator;
+        }
+
         function addControls() {
             controls = new OrbitControls(camera, renderer.domElement);
             controls.screenSpacePanning = true;
@@ -132,20 +141,6 @@
             controls.maxDistance = 60;
             controls.target.set(0, 0, 0);
             controls.update();
-        }
-
-        function sceneCube() {
-
-            cubeGeometry    = new THREE.BoxGeometry();
-            cubeMaterial    = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
-            cube            = new THREE.Mesh(cubeGeometry, cubeMaterial);
-
-            cube.castShadow = true;
-            cube.receiveShadow = false;
-
-            cube.position.y = 1.5;
-
-            scene.add(cube);
         }
 
         function sceneFloor() {
@@ -157,21 +152,10 @@
             plane.castShadow = false;
             plane.receiveShadow = true;
 
-            plane.position.y = -1.5;
-            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = 0;
+            plane.rotation.x = 0;
 
             scene.add(plane);
-        }
-
-        function sceneCubeAnimation(el) {
-            el.rotation.x += 0.0075;
-            el.rotation.y += 0.01;
-
-            if (el.scale.x < 2) {
-                el.scale.x += 0.005;
-                el.scale.y += 0.005;
-                el.scale.z += 0.005;
-            }
         }
 
     </script>
