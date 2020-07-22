@@ -20,7 +20,7 @@
         import { OrbitControls } from './js/OrbitControls.js';
 
         var container;
-        var camera, scene, renderer, controls;
+        var camera, scene, renderer, controls, clock, mixer;
 
         var ambientLight, pointLight, directionalLight, cameraLight, pointerLight;
 
@@ -58,6 +58,12 @@
             container = document.getElementById('canvas-container');
             container.appendChild( renderer.domElement );
 
+            // INIT Renderer
+            // --------------------------------------
+
+            clock = new THREE.Clock();
+
+
             // INIT Options
             // --------------------------------------
 
@@ -82,8 +88,11 @@
         function sceneAnimation() {
             requestAnimationFrame(sceneAnimation);
 
-            // Animation
-            sceneCubeAnimation(cube);
+            // Continuous Animation
+            // sceneCubeAnimation(cube);
+
+            // Tracked Animation
+            addClock();
 
             renderer.render(scene, camera);
         }
@@ -131,6 +140,14 @@
             controls.update();
         }
 
+        function addClock() {
+            var delta = clock.getDelta();
+
+            if (mixer) {
+                mixer.update(delta);
+            }
+        }
+
         function sceneCube() {
 
             cubeGeometry    = new THREE.BoxGeometry();
@@ -143,6 +160,9 @@
             cube.position.y = 1.5;
 
             scene.add(cube);
+
+            trackAnimation(cube);
+
         }
 
         function sceneFloor() {
@@ -160,15 +180,27 @@
             scene.add(plane);
         }
 
-        function sceneCubeAnimation(el) {
-            el.rotation.x += 0.0075;
-            el.rotation.y += 0.01;
+        // Example
+        function trackAnimation(obj) {
 
-            if (el.scale.x < 2) {
-                el.scale.x += 0.005;
-                el.scale.y += 0.005;
-                el.scale.z += 0.005;
-            }
+            // Scale
+            var trackScale      = new THREE.VectorKeyframeTrack('.scale', [0, 2, 4], [1, 1, 1, 2, 2, 2, 1, 1, 1], THREE.InterpolateSmooth);
+
+            // Rotation
+            var xAxis           = new THREE.Vector3(1, 0, 0);
+
+            var qInitial        = new THREE.Quaternion().setFromAxisAngle(xAxis, 0);
+            var qFinal          = new THREE.Quaternion().setFromAxisAngle(xAxis, Math.PI / 2);
+            var trackRotation   = new THREE.QuaternionKeyframeTrack('.quaternion', [0, 2, 4], [qInitial.x, qInitial.y, qInitial.z, qInitial.w, qFinal.x, qFinal.y, qFinal.z, qFinal.w, qInitial.x, qInitial.y, qInitial.z, qInitial.w]);
+
+            var clip            = new THREE.AnimationClip('Action', 4, [trackScale, trackRotation]);
+
+            // setup the THREE.AnimationMixer
+            mixer = new THREE.AnimationMixer(obj);
+
+            // create a ClipAction and set it to play
+            var clipAction = mixer.clipAction(clip);
+            clipAction.play();
         }
 
     </script>
