@@ -41,10 +41,8 @@
             // INIT Camera
             // --------------------------------------
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-            // camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 1000);
-            camera.position.set(8, 8, 8);
-            camera.rotation.set(-45, 35, 30);
+            camera = new THREE.OrthographicCamera(window.innerWidth / -192, window.innerWidth / 192, window.innerHeight / 192, window.innerHeight / -192, 1, 1000);
+            camera.position.set(500, 500, 500);
 
             // INIT Renderer
             // --------------------------------------
@@ -52,7 +50,7 @@
             renderer = new THREE.WebGLRenderer( { antialias: true } );
             renderer.setPixelRatio( window.devicePixelRatio );
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor('#52504c');
+            renderer.setClearColor('#3e3834');
 
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -104,8 +102,7 @@
             scene.add(pointLight);
 
             cameraLight = new THREE.PointLight(ambientColor, 0.6, 0, 1);
-            cameraLight.position.set(8, 8, 8);
-            cameraLight.rotation.set(-45, 35, 30);
+            cameraLight.position.set(500, 500, 500);
             scene.add(cameraLight);
 
             directionalLight = new THREE.DirectionalLight(directionalColor, 0.75, 100);
@@ -166,6 +163,8 @@
         function sceneCubeAnimation(el) {
             el.rotation.x += 0.0075;
             el.rotation.y += 0.01;
+
+            console.log(camera.position, camera.rotation);
 
             if (el.scale.x < 2) {
                 el.scale.x += 0.005;
