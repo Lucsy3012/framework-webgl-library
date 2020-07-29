@@ -71,7 +71,7 @@
         // --------------------------------------
 
         // Grid
-        // addGrid();
+        // helperGrid();
 
         // Lights
         addLights();
@@ -196,9 +196,9 @@
 
     }
 
-    function addGrid() {
-        var gridHelper = new THREE.GridHelper(0, 0);
-        scene.add(gridHelper);
+    function helperGrid() {
+        var grid = new THREE.GridHelper(0, 0);
+        scene.add(grid);
     }
 
     function addLights() {

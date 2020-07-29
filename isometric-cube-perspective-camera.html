@@ -63,7 +63,7 @@
             // --------------------------------------
 
             // Grid
-            // addGrid();
+            // helperGrid();
 
             // Lights
             addLights();
@@ -89,9 +89,9 @@
             renderer.render(scene, camera);
         }
 
-        function addGrid() {
-            var gridHelper = new THREE.GridHelper(0, 0);
-            scene.add(gridHelper);
+        function helperGrid() {
+            var grid = new THREE.GridHelper(0, 0);
+            scene.add(grid);
         }
 
         function addLights(ambientColor = 0xffa030, directionalColor = 0xffffff) {

@@ -5,8 +5,9 @@
     <title>Title</title>
 
     <style>
-        body { margin: 0; }
+        body { margin: 0; min-height: 4000px; overflow-x: hidden; }
         canvas { display: block; }
+        #canvas-container { position: sticky; top: 0; }
     </style>
 </head>
 <body>
@@ -20,12 +21,12 @@
         import { OrbitControls } from './js/OrbitControls.js';
 
         var container;
-        var camera, scene, renderer, controls;
+        var camera, scene, renderer, controls, loader;
 
         var ambientLight, pointLight, directionalLight, cameraLight, pointerLight;
 
-        var cubeGeometry, cubeMaterial, cube;
         var planeGeometry, planeMaterial, plane;
+        var objs = [];
 
         init();
         sceneAnimation();
@@ -40,9 +41,13 @@
 
             // INIT Camera
             // --------------------------------------
-
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-            // camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 1000);
+            var cameraLeft      = -10,
+                cameraRight     = 10,
+                cameraTop       = 10,
+                cameraBottom    = -10;
+            
+            // camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.OrthographicCamera(cameraLeft, cameraRight, cameraTop, cameraBottom, 0.1, 1000);
             camera.position.set(0, 0, 10);
             camera.rotation.set(0, 0, 0);
 
@@ -60,6 +65,11 @@
             container = document.getElementById('canvas-container');
             container.appendChild( renderer.domElement );
 
+            // INIT Loader
+            // --------------------------------------
+
+            loader = new THREE.TextureLoader();
+
             // INIT Options
             // --------------------------------------
 
@@ -70,22 +80,39 @@
             addLights();
 
             // Controls
-            addControls();
+            // addControls();
 
             // Create box
-            sceneCube();
             sceneFloor();
 
-            window.addEventListener('mousemove', function(e) { objPointerSync(e, pointerLight) }, false);
+            // Mouse Interactions
+            window.addEventListener('mousemove', function(e) { flatObjPointerSync(e) }, false);
+
+            // Window Interations
+            window.addEventListener('scroll', function() {
+                pointerLight.position.z = changeScrollingValue(0.001);
+            }, false);
+
+            window.addEventListener('resize', function() {
+                // todo keep aspect ratio of image
+                // camera.left      = window.innerWidth * -0.01;
+                // camera.right     = window.innerWidth * 0.01;
+                // camera.top       = window.innerHeight * 0.01;
+                // camera.bottom    = window.innerHeight * -0.01;
+
+                // plane.geometry.parameters.width = camera.left * -2;
+                // plane.geometry.parameters.height = window.innerHeight * 0.02;
+
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                camera.updateProjectionMatrix();
+            }, false);
         }
 
 
         // Rendering the scene
         function sceneAnimation() {
             requestAnimationFrame(sceneAnimation);
-
-            // Animation
-            sceneCubeAnimation(cube);
 
             renderer.render(scene, camera);
         }
@@ -96,14 +123,10 @@
         }
 
         function addLights(ambientColor = 0xffa030, directionalColor = 0xffffff) {
-            ambientLight = new THREE.AmbientLight(ambientColor, 0.1);
+            ambientLight = new THREE.AmbientLight(ambientColor, 0.2);
             scene.add(ambientLight);
 
-            // pointLight = new THREE.PointLight(ambientColor, 0.9, 0, 1);
-            // pointLight.position.set(3, 4, 2);
-            // scene.add(pointLight);
-
-            pointerLight = new THREE.PointLight(ambientColor, 0.9, 0, 1);
+            pointerLight = new THREE.PointLight(ambientColor, 4, 0, 1);
             // pointerLight = new THREE.DirectionalLight(ambientColor, 0.75, 100);
             pointerLight.position.set(0, 0, 1);
             pointerLight.rotation.set(0, 0, 0);
@@ -111,13 +134,6 @@
             pointerLight.shadow.mapSize.width = 2048;
             pointerLight.shadow.mapSize.height = 2048;
             scene.add(pointerLight);
-
-            directionalLight = new THREE.DirectionalLight(directionalColor, 0.75, 100);
-            directionalLight.position.set(0, 4, 0);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            scene.add(directionalLight);
         }
 
         function lightCameraSync(light = cameraLight) {
@@ -129,17 +145,19 @@
             light.rotation.z = camera.rotation.z;
         }
 
-        function objPointerSync(e, obj = pointerLight) {
-            var centerX = 100 / window.innerWidth * e.x - 50;
-            var centerY = -100 / window.innerHeight * e.y + 50;
+        function flatObjPointerSync(e, obj = pointerLight, minX = -10, maxY = 10, maxX = 10, minY = -10) {
+            var deltaX = (minX - maxX) * -1;
+            var deltaY = (minY - maxY) * -1;
 
-            console.log(e, centerX, centerY, (window.innerWidth * 0.005));
+            var positionX = deltaX / window.innerWidth * e.x - maxX;
+            var positionY = (deltaY / window.innerHeight * e.y - maxY) * -1;
 
-            obj.position.x = centerX / (window.innerWidth * 0.0055);
-            obj.position.y = centerY / (window.innerHeight * 0.0055) + 1.5;
-            obj.position.z = 5;
+            obj.position.x = positionX;
+            obj.position.y = positionY;
+        }
 
-            console.log(obj.position);
+        function changeScrollingValue(multiplicator = 0.01) {
+            return window.pageYOffset * multiplicator;
         }
 
         function addControls() {
@@ -151,46 +169,19 @@
             controls.update();
         }
 
-        function sceneCube() {
-
-            cubeGeometry    = new THREE.BoxGeometry();
-            cubeMaterial    = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
-            cube            = new THREE.Mesh(cubeGeometry, cubeMaterial);
-
-            cube.castShadow = true;
-            cube.receiveShadow = false;
-
-            cube.position.y = 0;
-
-            scene.add(cube);
-        }
-
         function sceneFloor() {
-
-            planeGeometry   = new THREE.PlaneGeometry(100, 100);
-            planeMaterial   = new THREE.MeshStandardMaterial( {color: 0x52504c} );
+            planeGeometry   = new THREE.PlaneGeometry(20, 20);
+            planeMaterial   = new THREE.MeshStandardMaterial( {map: loader.load('img/shiba-inu-chemistry.png'), color: 0x52504c} );
             plane           = new THREE.Mesh(planeGeometry, planeMaterial);
 
             plane.castShadow = false;
             plane.receiveShadow = true;
 
-            plane.position.y = -1.5;
-            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = 0;
+            plane.rotation.x = 0;
 
             scene.add(plane);
-        }
-
-        function sceneCubeAnimation(el) {
-            /*
-            el.rotation.x += 0.0075;
-            el.rotation.y += 0.01;
-
-            if (el.scale.x < 2) {
-                el.scale.x += 0.005;
-                el.scale.y += 0.005;
-                el.scale.z += 0.005;
-            }
-            */
+            objs.push(plane);
         }
 
     </script>

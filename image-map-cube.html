@@ -20,7 +20,7 @@
         import { OrbitControls } from './js/OrbitControls.js';
 
         var container;
-        var camera, scene, renderer, controls;
+        var camera, scene, renderer, controls, loader;
 
         var ambientLight, pointLight, directionalLight, cameraLight, pointerLight;
 
@@ -57,6 +57,10 @@
 
             container = document.getElementById('canvas-container');
             container.appendChild( renderer.domElement );
+
+            // INIT LOADER
+            // --------------------------------------
+            loader = new THREE.TextureLoader();
 
             // INIT Options
             // --------------------------------------
@@ -132,8 +136,10 @@
         }
 
         function sceneCube() {
+
             cubeGeometry    = new THREE.BoxGeometry();
-            cubeMaterial    = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
+            // cubeMaterial    = new THREE.MeshBasicMaterial( { map: loader.load('img/shiba-inu-chemistry.png') } ); // no lights needed
+            cubeMaterial    = new THREE.MeshStandardMaterial( { map: loader.load('img/shiba-inu-chemistry.png') } );
             cube            = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
             cube.castShadow = true;
@@ -145,6 +151,7 @@
         }
 
         function sceneFloor() {
+
             planeGeometry   = new THREE.PlaneGeometry(100, 100);
             planeMaterial   = new THREE.MeshStandardMaterial( {color: 0x52504c} );
             plane           = new THREE.Mesh(planeGeometry, planeMaterial);

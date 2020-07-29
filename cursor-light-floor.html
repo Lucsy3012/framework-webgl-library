@@ -24,7 +24,6 @@
         var camera, scene, renderer, controls;
 
         var ambientLight, pointLight, directionalLight, cameraLight, pointerLight;
-        var bindScrollY = 0.1 ;
 
         var planeGeometry, planeMaterial, plane;
 
@@ -65,7 +64,7 @@
             // --------------------------------------
 
             // Grid
-            // addGrid();
+            // helperGrid();
 
             // Lights
             addLights();
@@ -76,8 +75,13 @@
             // Create box
             sceneFloor();
 
+            // Mouse Interactions
             window.addEventListener('mousemove', function(e) { flatObjPointerSync(e) }, false);
-            window.addEventListener('scroll', function(e) { changeScrollingValue(0.001) }, false);
+
+            // Window Interations
+            window.addEventListener('scroll', function() {
+                pointerLight.position.z = changeScrollingValue(0.001);
+            }, false);
         }
 
 
@@ -88,9 +92,9 @@
             renderer.render(scene, camera);
         }
 
-        function addGrid() {
-            var gridHelper = new THREE.GridHelper(0, 0);
-            scene.add(gridHelper);
+        function helperGrid() {
+            var grid = new THREE.GridHelper(0, 0);
+            scene.add(grid);
         }
 
         function addLights(ambientColor = 0xffa030, directionalColor = 0xffffff) {
@@ -125,13 +129,10 @@
 
             obj.position.x = positionX;
             obj.position.y = positionY;
-            obj.position.z = bindScrollY;
-
-            console.log(obj.position);
         }
 
         function changeScrollingValue(multiplicator = 0.01) {
-            bindScrollY = window.pageYOffset * multiplicator;
+            return window.pageYOffset * multiplicator;
         }
 
         function addControls() {
