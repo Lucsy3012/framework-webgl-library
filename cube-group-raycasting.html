@@ -21,11 +21,12 @@
 
         var container;
         var camera, scene, renderer, controls;
+        var mouse, raycaster;
 
         var lightHelper, ambientLight, pointLight, directionalLight, hemisphereLight, cameraLight;
 
         var wireframe;
-        var localGroup;
+        var localGroup, localObjs;
         var cubeGeometry, cubeMaterial, cube;
         var cube2Geometry, cube2Material, cube2;
 
@@ -61,6 +62,9 @@
             container = document.getElementById('canvas-container');
             container.appendChild( renderer.domElement );
 
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
             // INIT Options
             // --------------------------------------
 
@@ -71,22 +75,23 @@
             addControls();
 
             // Create box
-            sceneCube();
-            sceneCube2();
-
-            // Wireframe
-            helperWireframe(cube, cubeGeometry);
+            sceneCube('Cube Groß');
+            sceneCube2('Cube klein');
 
             // Create group
-            sceneGroup(localGroup, [cube, cube2, wireframe]);
+            localObjs = [cube, cube2];
+            sceneGroup(localGroup, localObjs);
 
             window.addEventListener('mousemove', function() { lightCameraSync(cameraLight) }, false);
+            window.addEventListener('mousemove', mouseVectoring, false);
+            window.addEventListener('mousemove', function() { intersectHover(localObjs) }, false);
+            window.addEventListener('click', function() { intersectClick(localObjs) }, false);
 
             // INIT Helper
             // --------------------------------------
 
             // Grid
-            helperGrid();
+            // helperGrid();
 
             // Lights Helper
             // helperLight();
@@ -100,8 +105,6 @@
             // Animation
             sceneCubeAnimation(localGroup);
             sceneCubeAnimation(cube2);
-
-            // console.log(localGroup);
 
             renderer.render(scene, camera);
         }
@@ -148,7 +151,7 @@
             controls.update();
         }
 
-        function sceneCube() {
+        function sceneCube(name) {
             cubeGeometry    = new THREE.BoxBufferGeometry();
             cubeMaterial    = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
             cube            = new THREE.Mesh(cubeGeometry, cubeMaterial);
@@ -158,19 +161,23 @@
 
             cube.position.y = -1.5;
 
+            cube.name = name !== undefined ? name : '';
+
             scene.add(cube);
         }
 
-        function sceneCube2() {
-            cube2Geometry    = new THREE.BoxBufferGeometry();
-            cube2Material    = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
-            cube2            = new THREE.Mesh(cube2Geometry, cube2Material);
+        function sceneCube2(name) {
+            cube2Geometry   = new THREE.BoxBufferGeometry();
+            cube2Material   = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
+            cube2           = new THREE.Mesh(cube2Geometry, cube2Material);
 
             cube2.castShadow = true;
             cube2.receiveShadow = false;
 
             cube2.position.y = 1.5;
             cube2.scale.set(0.5, 0.5, 0.5);
+
+            cube2.name = name !== undefined ? name : '';
 
             scene.add(cube2);
         }
@@ -191,32 +198,55 @@
         }
 
 
+        // Raycasting (find intersecting elements)
+        function mouseVectoring(e) {
+            // calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function rayCastingObjs(objs) {
+            raycaster.setFromCamera(mouse, camera);
+
+            return raycaster.intersectObjects(objs);
+        }
+
+        function intersectHover(objs) {
+            var intersects = rayCastingObjs(objs);
+
+            if (intersects.length > 0) {
+                intersectHoverTrue(intersects);
+            } else {
+                intersectHoverFalse(objs);
+            }
+        }
+
+        function intersectHoverTrue(objs) {
+            objs[0].object.material.color.set(0xFF0000);
+            console.log(objs[0].object.name);
+        }
+
+        function intersectHoverFalse(objs) {
+            objs.forEach(function(obj) {
+                obj.material.color.set(0xC7C7C7);
+            });
+        }
+
+        function intersectClick(objs) {
+            var intersects = rayCastingObjs(objs);
+
+            if (intersects.length > 0) {
+                alert(intersects[0].object.name);
+            }
+        }
+
+
         // Helpers
         function helperGrid() {
             var grid = new THREE.GridHelper(0, 0);
             scene.add(grid);
-        }
-
-        function helperWireframe(obj, geometry) {
-            var wireframeGeometry   = new THREE.WireframeGeometry(geometry);
-            wireframe               = new THREE.LineSegments(wireframeGeometry);
-
-            wireframe.material.depthTest = false;
-            wireframe.material.opacity = 0.5;
-            wireframe.material.transparent = true;
-
-            // Apply all properties from obj to wireframe
-            wireframe.scale.x = obj.scale.x;
-            wireframe.scale.y = obj.scale.y;
-            wireframe.scale.z = obj.scale.z;
-            wireframe.position.x = obj.position.x;
-            wireframe.position.y = obj.position.y;
-            wireframe.position.z = obj.position.z;
-            wireframe.rotation.x = obj.rotation.x;
-            wireframe.rotation.y = obj.rotation.y;
-            wireframe.rotation.z = obj.rotation.z;
-
-            scene.add(wireframe);
         }
 
         function helperLight(light = directionalLight, size = 1, color = '#ffffff') {
