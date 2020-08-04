@@ -29,6 +29,7 @@
         var localGroup;
         var cubeGeometry, cubeMaterial, cube;
         var cube2Geometry, cube2Material, cube2;
+        var cube3Geometry, cube3Material, cube3;
 
         init();
         sceneAnimation();
@@ -74,12 +75,10 @@
             // Create box
             sceneCube();
             sceneCube2();
-
-            // Wireframe
-            helperWireframe(cube, cubeGeometry);
+            sceneCube3();
 
             // Create group
-            sceneGroup(localGroup, [cube, cube2, wireframe]);
+            sceneGroup(localGroup, [cube, cube2, cube3]);
 
             window.addEventListener('mousemove', function() { lightCameraSync(cameraLight) }, false);
 
@@ -101,10 +100,15 @@
             framesCount++;
 
             // Animation
-            sceneCubeAnimation(localGroup);
-            sceneCubeAnimation(cube2);
+            var speed = 0.01;
 
-            console.log(localGroup);
+            var orbitRadius1 = new THREE.Vector3(-2, -2, -2);
+            var orbitRadius2 = new THREE.Vector3(2, 2, 2);
+            var orbitRadius3 = new THREE.Vector3(2, 2, 2);
+
+            orbitAround2D(cube, 'z', speed, orbitRadius1);
+            orbitAround2D(cube2, 'z', speed, orbitRadius2);
+            orbitAround2D(cube3, 'x', speed, orbitRadius3);
 
             renderer.render(scene, camera);
         }
@@ -178,6 +182,20 @@
             scene.add(cube2);
         }
 
+        function sceneCube3() {
+            cube3Geometry    = new THREE.BoxBufferGeometry();
+            cube3Material    = new THREE.MeshStandardMaterial( { color: 0xC7C7C7 } );
+            cube3            = new THREE.Mesh(cube3Geometry, cube3Material);
+
+            cube3.castShadow = true;
+            cube3.receiveShadow = false;
+
+            cube3.position.z = 1.5;
+            cube3.scale.set(0.25, 0.25, 0.25);
+
+            scene.add(cube3);
+        }
+
         function sceneGroup(group, objs) {
             group = localGroup = new THREE.Group();
 
@@ -188,17 +206,41 @@
             scene.add(group);
         }
 
-        function sceneCubeAnimation(el) {
-            el.rotation.x += 0.0075;
-            el.rotation.y += 0.01;
+        function sin(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.sin((Math.PI / 2) * (x * speed)) * radius) + center;
         }
 
-        function sin(x, frequence = 0.001, range = 1, start = 0) {
-            return (Math.sin((Math.PI / 2) * (x * frequence)) * range) + start;
+        function cos(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.cos((Math.PI / 2) * (x * speed)) * radius) + center;
         }
 
-        function cos(x, frequence = 0.001, range = 1, start = 0) {
-            return (Math.cos((Math.PI / 2) * (x * frequence)) * range) + start;
+        function orbitAround2D(obj, ax = 'y', speed = 0.01, radius, center) {
+            radius  = (radius === undefined) ? new THREE.Vector3(2, 2, 2) : radius; // Orbit radius
+            center  = (center === undefined) ? new THREE.Vector3(0, 0, 0) : center; // Orbit center
+
+            // Orbit around x
+            if (ax.includes('x')) {
+                obj.position.x = center.x;
+                obj.position.y = cos(framesCount, speed, radius.y, center.y);
+                obj.position.z = sin(framesCount, speed, radius.z, center.z);
+                obj.rotation.x = framesCount * speed * (Math.PI / 2);
+            }
+
+            // Orbit around y
+            if (ax.includes('y')) {
+                obj.position.y = center.y;
+                obj.position.z = cos(framesCount, speed, radius.z, center.z);
+                obj.position.x = sin(framesCount, speed, radius.x, center.x);
+                obj.rotation.y = framesCount * speed * (Math.PI / 2);
+            }
+
+            // Orbit around z
+            if (ax.includes('z')) {
+                obj.position.z = center.z;
+                obj.position.x = cos(framesCount, speed, radius.x, center.x);
+                obj.position.y = sin(framesCount, speed, radius.y, center.y);
+                obj.rotation.z = framesCount * speed * (Math.PI / 2);
+            }
         }
 
 
