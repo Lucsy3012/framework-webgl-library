@@ -75,10 +75,12 @@
             // Create particles
             sceneParticles();
 
-            // Create group
-            sceneGroup(localGroup, particles);
+            groupSlices();
 
-            window.addEventListener('mousemove', function() { lightCameraSync(cameraLight) }, false);
+            // Create group
+            sceneGroup(localGroup, particlesSlice);
+
+            // window.addEventListener('mousemove', function() { lightCameraSync(cameraLight) }, false);
 
             // INIT Helper
             // --------------------------------------
@@ -97,9 +99,12 @@
 
             framesCount++;
 
+            // particlesSlice[3].rotation.x += 0.02;
+            // console.log(particlesSlice[2], particlesSlice[2].rotation.x);
+
             // Animation
-            // localGroup.rotation.x += 0.02;
-            // localGroup.rotation.y += 0.01;
+            localGroup.rotation.x += 0.02;
+            localGroup.rotation.y += 0.01;
 
             renderer.render(scene, camera);
         }
@@ -147,9 +152,28 @@
         }
 
         function sceneParticles(size = 0.025, length = 16) {
-            geometry    = new THREE.SphereBufferGeometry(size, 128, 128);
+            geometry    = new THREE.SphereBufferGeometry(size, 64, 64);
             material    = new THREE.MeshStandardMaterial( { color: 0xD7D7D7 } );
 
+            let i = 0, ix, iy;
+
+            // Two Dimensions (x & y)
+            for (let ix = 0; ix < length; ++ix) {
+
+                // Third Dimension (z)
+                for (let iy = 0; iy < length; ++iy) {
+
+                    particle = particles[i++] = new THREE.Mesh(geometry, material);
+
+                    particle.position.x = Math.sin((iy * (2 / length)) * Math.PI);
+                    particle.position.y = Math.cos((iy * (2 / length)) * Math.PI);
+
+                    scene.add(particle);
+                }
+            }
+        }
+
+        function groupSlices(length = 16) {
             let i = 0, ix, iy;
 
             // Two Dimensions (x & y)
@@ -159,25 +183,16 @@
 
                 // Third Dimension (z)
                 for (let iy = 0; iy < length; ++iy) {
-
-                    particle = particles[i++] = new THREE.Mesh(geometry, material);
-
-                    particle.position.x = Math.sin((ix * (2 / length)) * Math.PI);
-                    particle.position.y = Math.cos((ix * (2 / length)) * Math.PI);
-
-                    // .add doesn't work
-                    // particlesSlice[ix].add(particles[i-1])
-                    // particlesSlice[ix].children[iy] = particles[i-1];
-
-                    scene.add(particle);
+                    i++;
+                    particlesSlice[ix].add(particles[i-1]);
                 }
+
+                scene.add(particlesSlice[ix]);
+
+                particlesSlice[ix].rotation.x = 45 / Math.PI * (ix / length * 180);
+                particlesSlice[ix].rotation.y = 45 / Math.PI * (ix / length * 180);
+                particlesSlice[ix].rotation.z = 45 / Math.PI * (ix / length * 180);
             }
-
-            /*
-            console.log(particlesSlice);
-
-            scene.add(particlesSlice);
-             */
         }
 
         function sceneGroup(group, objs) {
