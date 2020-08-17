@@ -143,12 +143,15 @@
         }
 
         function sceneParticlesRandom(size = 0.2, length = 10000, minDistance = 50, maxDistance = 750) {
+
+            // Init
+            geometry = new THREE.SphereBufferGeometry(size, 8, 8);
+
             let i = 0;
 
             for (i; i < length; ++i) {
 
                 // Init
-                geometry = new THREE.SphereBufferGeometry(size, 8, 8);
                 material = new THREE.MeshBasicMaterial( { color: "hsl(0, 100%, 100%)" } );
                 particle = particles[i] = new THREE.Mesh(geometry, material);
                 particle.material.transparent = true;
