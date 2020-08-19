@@ -28,11 +28,11 @@
         var wireframe;
         var localGroup;
         var particles = [],
-            particlesSlice = [],
             particle, geometry, material;
 
         // Math variables
         const deg = Math.PI / 180; // one degree
+        const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
         init();
         sceneAnimation();
@@ -70,20 +70,20 @@
             // --------------------------------------
 
             // Lights
-            addLights();
+            // addLights();
 
             // Controls
             addControls();
 
             // Create particles
-            sceneParticles();
-            groupSlices();
+            sceneParticles(0.006, 4096, 1);
+            // groupSlices();
 
             // Create fog
             // scene.fog = new THREE.FogExp2(0x0f0f1f, 0.065);
 
             // Create group
-            sceneGroup(localGroup, particlesSlice);
+            sceneGroup(localGroup, particles);
 
             // Update renderer and camera when resizing
             window.addEventListener('resize', onWindowResize, false);
@@ -98,7 +98,7 @@
             // helperLight();
 
             // Sphere Helper
-            // helperSphere();
+            // helperSphere(3);
         }
 
 
@@ -108,9 +108,32 @@
 
             framesCount++;
 
+            // Single Particles Animation
+            for (let i = 0; i < particles.length; ++i) {
+
+                // Scaling
+                particles[i].scale.set(
+                    (Math.sin((framesCount + Math.sqrt(i)) * 0.025)),
+                    (Math.sin((framesCount + Math.sqrt(i)) * 0.025)),
+                    (Math.sin((framesCount + Math.sqrt(i)) * 0.025))
+                );
+
+                // Color
+                particles[i].material.color.setHSL((Math.sin((framesCount * 0.01) + (i * 0.0005)) * 0.5) + 0.5, 0.75, 0.75);
+            }
+
             // Sphere Animation
-            // localGroup.rotation.y = Math.cos(framesCount * 0.01);
-            // localGroup.rotation.z = Math.sin(framesCount * 0.01);
+            localGroup.rotation.x += 0.025;
+            localGroup.rotation.y += 0.02;
+            localGroup.rotation.z += 0.02;
+
+            /*
+            localGroup.scale.set(
+                1 + (Math.cos(framesCount * 0.015) * 0.15),
+                1 + (Math.cos(framesCount * 0.015) * 0.15),
+                1 + (Math.cos(framesCount * 0.015) * 0.15)
+            );
+            */
 
             renderer.render(scene, camera);
         }
@@ -139,44 +162,34 @@
             controls.update();
         }
 
-        function sceneParticles(size = 0.01, length = 64, r = 2) {
+        function sceneParticles(size = 0.01, length = 2048, r = 1) {
             geometry    = new THREE.SphereBufferGeometry(size, 16, 16);
-            material    = new THREE.MeshBasicMaterial( { color: "hsl(21, 100%, 64%)" } );
 
-            let i = 0, ix, iy;
-            const theta = (180 / length) * deg;     // [0 - 180]
-            const varphi = (360 / length) * deg;    // [-180 - 180]
+            for (let i = 0; i < length; ++i) {
+                material    = new THREE.MeshBasicMaterial( { color: "hsl(21, 100%, 64%)" } );
 
-            // Two Dimensions (x & y)
-            for (let ix = 0; ix < length; ++ix) {
+                // Method: http://blog.marmakoide.org/?p=1
+                let theta = goldenAngle * i;
+                let z = equalDistribution(Math.pow(r, 2), length, i);
+                let radius = Math.sqrt(Math.pow(r, 2) - (z * z));
 
-                for (let iy = 0; iy < length; ++iy) {
+                particle = particles[i] = new THREE.Mesh(geometry, material);
+                particle.position.x = radius * Math.sin(theta);
+                particle.position.y = radius * Math.cos(theta);
+                particle.position.z = z;
 
-                    particle = particles[i++] = new THREE.Mesh(geometry, material);
-
-                    particle.position.x = r * Math.sin(theta * iy) * Math.cos((varphi * ix) - (theta * length));
-                    particle.position.y = r * Math.sin(theta * iy) * Math.sin((varphi * ix) - (theta * length));
-                    particle.position.z = r * Math.cos(theta * iy);
-
-                    scene.add(particle);
-                }
+                scene.add(particle);
             }
+
         }
 
-        function groupSlices(length = 64) {
-            let i = 0, ix, iy;
-
-            // Two Dimensions (x & y)
-            for (let ix = 0; ix < length; ++ix) {
-
-                particlesSlice[ix] = new THREE.Group();
-
-                // Third Dimension (z)
-                for (let iy = 0; iy < length; ++iy) {
-                    i++;
-                    particlesSlice[ix].add(particles[i-1]);
-                }
-            }
+        function helperSphere(r = 1) {
+            let sphereGeometry = new THREE.SphereBufferGeometry(r, 64, 64);
+            let sphereMaterial = new THREE.MeshBasicMaterial( { color: "hsl(0, 100%, 80)" } );
+            let sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.material.transparent = true;
+            sphere.material.opacity = 0.3;
+            scene.add(sphere);
         }
 
         function sceneGroup(group, objs) {
@@ -277,16 +290,6 @@
             }
 
             scene.add(lightHelper);
-        }
-
-        function helperSphere(r = 2) {
-            let sphereGeometry = new THREE.SphereBufferGeometry(r, 64, 64);
-            let sphereMaterial = new THREE.MeshBasicMaterial( { color: "hsl(0, 100%, 80)" } );
-            let sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-
-            sphere.material.transparent = true;
-            sphere.material.opacity = 0.3;
-            scene.add(sphere);
         }
 
 
