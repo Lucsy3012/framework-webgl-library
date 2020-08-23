@@ -169,6 +169,11 @@
                 particle.position.y = (yRandom * (maxDistance - minDistance)) + minDistance;
                 particle.position.z = (zRandom * (maxDistance - minDistance)) + minDistance;
 
+                // With three.js math utilities
+                // particle.position.x = THREE.MathUtils.randFloat(50, 750) * THREE.MathUtils.randFloatSpread(2);
+                // particle.position.y = THREE.MathUtils.randFloat(50, 750) * THREE.MathUtils.randFloatSpread(2);
+                // particle.position.z = THREE.MathUtils.randFloat(50, 750) * THREE.MathUtils.randFloatSpread(2);
+
                 scene.add(particle);
             }
         }

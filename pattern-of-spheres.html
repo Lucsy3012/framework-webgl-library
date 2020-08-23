@@ -5,8 +5,9 @@
     <title>Title</title>
 
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        body { margin: 0; min-height: 4000px; overflow-x: hidden; }
+        #canvas-container { position: sticky; top: 0; }
+        #canvas-container.no-orbiting canvas { pointer-events: none; }
     </style>
 </head>
 <body>
@@ -21,14 +22,17 @@
 
         var container;
         var camera, scene, renderer, controls;
-        var framesCount = 0;
+        var framesCount = 100;
 
         var lightHelper, ambientLight, pointLight, directionalLight, hemisphereLight, cameraLight;
 
-        var wireframe;
         var localGroup;
         var particles = [],
             particle, geometry, material;
+
+        // Particle variables
+        const lengthX = 200;
+        const lengthY = 150;
 
         // Math variables
         const deg = Math.PI / 180; // one degree
@@ -49,14 +53,14 @@
             // --------------------------------------
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(6, 6, 6);
+            camera.position.set(0, 6, 0);
             camera.rotation.set(-45, 35, 30);
 
             // INIT Renderer
             // --------------------------------------
 
             renderer = new THREE.WebGLRenderer( { antialias: true } );
-            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setClearColor('#0f0f1f');
 
@@ -76,14 +80,15 @@
             addControls();
 
             // Create particles
-            sceneParticles(0.006, 4096, 1);
-            // groupSlices();
+            sceneParticlesPattern(lengthX, lengthY, 0.02);
 
             // Create fog
             // scene.fog = new THREE.FogExp2(0x0f0f1f, 0.065);
 
             // Create group
             sceneGroup(localGroup, particles);
+
+            localGroup.rotation.y = 15 * deg;
 
             // Update renderer and camera when resizing
             window.addEventListener('resize', onWindowResize, false);
@@ -92,13 +97,10 @@
             // --------------------------------------
 
             // Grid
-            helperGrid();
+            // helperGrid();
 
             // Lights Helper
             // helperLight();
-
-            // Sphere Helper
-            // helperSphere(3);
         }
 
 
@@ -111,29 +113,20 @@
             // Single Particles Animation
             for (let i = 0; i < particles.length; ++i) {
 
-                // Scaling
-                particles[i].scale.set(
-                    (Math.sin((framesCount + Math.sqrt(i)) * 0.025)),
-                    (Math.sin((framesCount + Math.sqrt(i)) * 0.025)),
-                    (Math.sin((framesCount + Math.sqrt(i)) * 0.025))
+                let fSin = Math.sin(framesCount * 0.033 * particles[i].seed);
+                let fCos = Math.cos(framesCount * 0.033 * particles[i].seed);
+
+                particles[i].material.opacity = fSin;
+                particles[i].material.color.setHSL(
+                    0.55 + (fCos * 0.05),
+                    0.50 + (fCos * 0.25),
+                    0.25 + (fSin * 0.25)
                 );
 
-                // Color
-                particles[i].material.color.setHSL((Math.sin((framesCount * 0.01) + (i * 0.0005)) * 0.5) + 0.5, 0.75, 0.75);
+                particles[i].position.y = (fSin * 0.15 + 0.25);
+
+                // particles[i].material.opacity = Math.sin(framesCount * 0.0005 * i); // interesting pattern
             }
-
-            // Sphere Animation
-            localGroup.rotation.x += 0.025;
-            localGroup.rotation.y += 0.02;
-            localGroup.rotation.z += 0.02;
-
-            /*
-            localGroup.scale.set(
-                1 + (Math.cos(framesCount * 0.015) * 0.15),
-                1 + (Math.cos(framesCount * 0.015) * 0.15),
-                1 + (Math.cos(framesCount * 0.015) * 0.15)
-            );
-            */
 
             renderer.render(scene, camera);
         }
@@ -162,23 +155,29 @@
             controls.update();
         }
 
-        function sceneParticles(size = 0.01, length = 2048, r = 1) {
-            geometry    = new THREE.SphereBufferGeometry(size, 16, 16);
+        function sceneParticlesPattern(lengthX, lengthY, size = 0.025, separation = size * 3.5) {
+            geometry    = new THREE.SphereBufferGeometry(size, 8, 8);
 
-            for (let i = 0; i < length; ++i) {
-                material    = new THREE.MeshBasicMaterial( { color: "hsl(21, 100%, 64%)" } );
+            let i = 0, ix, iy;
 
-                // Method: http://blog.marmakoide.org/?p=1
-                let theta = goldenAngle * i;
-                let z = equalDistribution(Math.pow(r, 2), length, i);
-                let radius = Math.sqrt(Math.pow(r, 2) - (z * z));
+            for (let ix = 0; ix < lengthX; ++ix) {
 
-                particle = particles[i] = new THREE.Mesh(geometry, material);
-                particle.position.x = radius * Math.sin(theta);
-                particle.position.y = radius * Math.cos(theta);
-                particle.position.z = z;
+                for (let iy = 0; iy < lengthY; ++iy) {
+                    material    = new THREE.MeshBasicMaterial();
+                    particle    = particles[i++]    = new THREE.Mesh(geometry, material);
+                    particle.material.transparent   = true;
 
-                scene.add(particle);
+                    //                    Regular             Centering on canvas
+                    particle.position.x = (ix * separation) - (lengthX * separation / 2);
+                    particle.position.y = 0;
+                    particle.position.z = (iy * separation) - (lengthY * separation / 2);
+
+                    // Custom properties
+                    particle.seed = Math.random();
+
+                    scene.add(particle);
+                }
+
             }
 
         }
@@ -191,47 +190,6 @@
             });
 
             scene.add(group);
-        }
-
-        function equalDistribution(min, length, i) {
-            return ((min / (length / 2)) * (i + 1)) - (min + (1 / (length)));
-        }
-
-        function sin(x, speed = 0.001, radius = 1, center = 0) {
-            return (Math.sin((Math.PI / 2) * (x * speed)) * radius) + center;
-        }
-
-        function cos(x, speed = 0.001, radius = 1, center = 0) {
-            return (Math.cos((Math.PI / 2) * (x * speed)) * radius) + center;
-        }
-
-        function orbitAround2D(obj, ax = 'y', speed = 0.01, radius, center) {
-            radius  = (radius === undefined) ? new THREE.Vector3(2, 2, 2) : radius; // Orbit radius
-            center  = (center === undefined) ? new THREE.Vector3(0, 0, 0) : center; // Orbit center
-
-            // Orbit around x
-            if (ax.includes('x')) {
-                obj.position.x = center.x;
-                obj.position.y = cos(framesCount, speed, radius.y, center.y);
-                obj.position.z = sin(framesCount, speed, radius.z, center.z);
-                obj.rotation.x = framesCount * speed * (Math.PI / 2);
-            }
-
-            // Orbit around y
-            if (ax.includes('y')) {
-                obj.position.y = center.y;
-                obj.position.z = cos(framesCount, speed, radius.z, center.z);
-                obj.position.x = sin(framesCount, speed, radius.x, center.x);
-                obj.rotation.y = framesCount * speed * (Math.PI / 2);
-            }
-
-            // Orbit around z
-            if (ax.includes('z')) {
-                obj.position.z = center.z;
-                obj.position.x = cos(framesCount, speed, radius.x, center.x);
-                obj.position.y = sin(framesCount, speed, radius.y, center.y);
-                obj.rotation.z = framesCount * speed * (Math.PI / 2);
-            }
         }
 
 
@@ -281,15 +239,6 @@
             }
 
             scene.add(lightHelper);
-        }
-
-        function helperSphere(r = 1) {
-            let sphereGeometry = new THREE.SphereBufferGeometry(r, 64, 64);
-            let sphereMaterial = new THREE.MeshBasicMaterial( { color: "hsl(0, 100%, 80)" } );
-            let sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.material.transparent = true;
-            sphere.material.opacity = 0.3;
-            scene.add(sphere);
         }
 
 
