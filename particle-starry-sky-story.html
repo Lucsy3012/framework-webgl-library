@@ -277,6 +277,8 @@
 
 
         // Story
+
+        // Increase story count (general)
         function storyUp(e) {
             const s = window.story,
 
@@ -291,6 +293,7 @@
             }
         }
 
+        // Decrease story count (general)
         function storyDown(e) {
             const s = window.story,
 
@@ -304,6 +307,7 @@
             }
         }
 
+        // Get current status and write to story (general)
         function storyTriggerRewrites() {
 
             // Get current status on trigger
@@ -315,16 +319,16 @@
         }
 
         function storyAnimateCameraPosition(framesCount, storyFrameClicked, storyCameraPositionClicked, countTo) {
-            const c = camera.position;
-            const p = window.storyFrames[window.story].camera.position;
+            const current = camera.position;
+            const target = window.storyFrames[window.story].camera.position;
             const s = storyCameraPositionClicked;
 
             // Approach 0 to 1 (Math.PI / 2) in (countTo) frames
             let progress = Math.sin(sin1 / countTo * (framesCount - storyFrameClicked));
 
-            c.x = s.x + ((p.x - s.x) * progress);
-            c.y = s.y + ((p.y - s.y) * progress);
-            c.z = s.z + ((p.z - s.z) * progress);
+            current.x = s.x + ((target.x - s.x) * progress);
+            current.y = s.y + ((target.y - s.y) * progress);
+            current.z = s.z + ((target.z - s.z) * progress);
 
             // Progress finished : end animation
             if (progress >= 1) {
