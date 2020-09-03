@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <link rel="shortcut icon" href="img/favicon.ico">
+    <title>Pattern of Spheres</title>
 
     <style>
         body { margin: 0; }
@@ -53,7 +54,7 @@
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 6, 0);
-            camera.rotation.set(-45, 35, 30);
+            camera.lookAt(0, 0, 0);
 
             // INIT Renderer
             // --------------------------------------
@@ -76,7 +77,7 @@
             // addLights();
 
             // Controls
-            addControls();
+            // addControls();
 
             // Create particles
             sceneParticlesPattern(lengthX, lengthY, 0.02);
