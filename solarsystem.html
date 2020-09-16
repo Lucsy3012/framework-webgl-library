@@ -74,7 +74,10 @@
             z-index: 1;
         }
 
-        .days-passed {
+        /* Controller
+         ----------------------------------- */
+
+        .controller {
             position: absolute;
             left: 70px;
             bottom: 70px;
@@ -85,21 +88,44 @@
             animation-iteration-count: 1;
         }
 
-        .days-passed #days {
+        .controller .value {
+            display: inline-block;
+            width: auto;
             margin: 10px 0 0;
             font-family: 'Inter', sans-serif;
             font-size: 16px;
             font-weight: 200;
+            text-align: center;
+            outline: none;
+            border: none;
             color: #ffffffdd;
+            text-shadow: 0 0 6px #ffffffaa;
+            background: none;
         }
 
-        .days-passed .title {
+        .controller input.value {
+            width: 60px;
+        }
+
+        .controller .title {
             margin-top: 10px;
             font-family: 'Inter', sans-serif;
             font-size: 13px;
             font-weight: 300;
-            color: #ffffff88;
+            color: #ffffff77;
         }
+
+        .controller.days-passed {
+            left: 70px;
+        }
+        .controller.simulation-speed {
+            left: 200px;
+            padding-left: 46px;
+            border-left: 1px solid #fff3;
+        }
+
+        /* Navigation
+         ----------------------------------- */
 
         .navigator {
             position: absolute;
@@ -172,9 +198,15 @@
         </div>
         -->
         <div id="canvas-container">
-            <div class="days-passed">
-                <div id="days">0</div>
+            <div class="controller days-passed">
+                <div class="value" id="days">0</div>
                 <div class="title">Days passed</div>
+            </div>
+            <div class="controller simulation-speed">
+                <form>
+                    <input class="value" id="simulation-speed" type="number" value="1" />
+                </form>
+                <div class="title">Simulation speed</div>
             </div>
             <!--
             <div class="navigator">
@@ -210,6 +242,7 @@
             particle, geometry, material;
 
         // Math variables
+        const pi2 = Math.PI * 2; // full rotation
         const deg = Math.PI / 180; // one degree
         const sin1 = Math.PI / 2; // one sin
 
@@ -256,13 +289,16 @@
         let orbit, orbitGeometry, orbitMaterial, orbits = [];
 
         // Simulation
+        let seconds = 0;
         let daysInSimulationPast = 0;
         const updateDateEvent = new Event('updateDate');
+        let simulationSpeed = window.simulationSpeed = 1;
 
         // Variables
         const AE = 149597870;
         const km = 1 / 1000;
-        const day = 1 / 365;
+        const year = 365;
+        const day = 1 / year;
         const fps = 60;
         const solarsystem = {
             "sun": {
@@ -271,7 +307,7 @@
                 },
                 "body": {
                     // "radius": 700000.00,
-                    "radius": 25000.00,
+                    "radius": 100000.00,
                     "distance": 0,
                     "speed": 0,
                     "rotationSpeed": 0.04,
@@ -331,6 +367,73 @@
                     "color": "#dd965f"
                 }
             },
+            "jupiter": {
+                "orbital": {
+                    "tilt": 1.304,
+                },
+                "body": {
+                    // "radius": 71492.0,
+                    "radius": 35746.0,
+                    "distance": 5.204,
+                    "speed": 13.06,
+                    "rotationSpeed": 0.4125,
+                    "tilt": 3.13,
+                    "color": "#e9c5a9"
+                }
+            },
+            "saturn": {
+                "orbital": {
+                    "tilt": 2.4845,
+                },
+                "body": {
+                    // "radius": 60268.0,
+                    "radius": 30134.0,
+                    "distance": 9.582,
+                    "speed": 9.68,
+                    "rotationSpeed": 0.4375,
+                    "tilt": 26.73,
+                    "color": "#e0c092"
+                }
+            },
+            "uranus": {
+                "orbital": {
+                    "tilt": 0.7699,
+                },
+                "body": {
+                    "radius": 25559.0,
+                    "distance": 19.201,
+                    "speed": 6.81,
+                    "rotationSpeed": 0.71875,
+                    "tilt": 97.77,
+                    "color": "#b8f3fc"
+                }
+            },
+            "neptune": {
+                "orbital": {
+                    "tilt": 1.7692,
+                },
+                "body": {
+                    "radius": 24764.0,
+                    "distance": 30.047,
+                    "speed": 5.43,
+                    "rotationSpeed": 0.65,
+                    "tilt": 28.32,
+                    "color": "#4289c6"
+                }
+            },
+            "pluto": {
+                "orbital": {
+                    "tilt": 17.1418,
+                },
+                "body": {
+                    "radius": 1187.0,
+                    "distance": 39.482,
+                    "speed": 4.67,
+                    "rotationSpeed": 0.15,
+                    "tilt": 122.53,
+                    "color": "#947c6c"
+                }
+            }
         };
 
         // Assign story variables
@@ -352,8 +455,7 @@
             // --------------------------------------
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 100000);
-            // camera.position.set(0, -200, -200); // outside perspective
-            camera.position.set(-100, 100, 100);
+            camera.position.set(0, 1000, 2000);
             camera.lookAt(0, 0, 0);
 
             // INIT Renderer
@@ -362,7 +464,7 @@
             renderer = new THREE.WebGLRenderer( { antialias: true } );
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor('#0f0f1f');
+            renderer.setClearColor('#080810');
 
             container = document.getElementById('canvas-container');
             container.appendChild(renderer.domElement);
@@ -412,28 +514,29 @@
         function sceneAnimation() {
             requestAnimationFrame(sceneAnimation);
 
-            // Count seconds
-            // console.log((framesCount % 60) + 1);
-
             framesCount++;
+            seconds++;
 
-            if (framesCount % 60 === 0) {
+            // if one second (times the simulation speed) has passed
+            if ((seconds * window.simulationSpeed) / fps >= 1) {
+
+                // Update days count
                 daysInSimulationPast++;
                 window.daysInSimulationPast = daysInSimulationPast;
                 document.dispatchEvent(updateDateEvent);
+
+                // Reset seconds
+                seconds = 0;
             }
 
-            // Single Particles Animation
+            // Stars Animation
             for (let i = 0; i < particles.length; ++i) {
-
-                // Opacity
                 particles[i].material.opacity = (Math.sin((i + framesCount) * 0.01)) + 1.25;
             }
 
-            // Sphere Animation
-            particlesGroup.rotation.x += 0.0000100;
-            particlesGroup.rotation.y += 0.0000175;
-            particlesGroup.rotation.z += 0.0000250;
+            // Stars Group Animation
+            particlesGroup.rotation.x += 0.0000155 * window.simulationSpeed;
+            particlesGroup.rotation.y += 0.0000150 * window.simulationSpeed;
 
 
             // Single Orbit Animation
@@ -444,15 +547,21 @@
 
                 // If orbit around center exists
                 if (o.body.distance > 0) {
-                    orbits[i].rotation.y += ((o.body.speed * km) / (o.body.distance * AE * km * (Math.PI * 2)) * fps * 365) / Math.PI * 2;
+                    let radius = o.body.distance * AE;
+                    let circum = radius * Math.PI * 2;
+                    let traveledPerDay = o.body.speed * 60 * 60 * 24;
+
+                    orbits[i].rotation.y += (pi2 / circum * traveledPerDay) / fps * window.simulationSpeed;
                     orbits[i].rotation.x = s[key].orbital.tilt * deg;
                 }
             }
 
             // Story Animation
+            /*
             if (storyTransition === true) {
                 storyAnimateCameraPosition(framesCount, storyFrameClicked, storyCameraPositionClicked, 200);
             }
+            */
 
             renderer.render(scene, camera);
         }
@@ -488,12 +597,13 @@
                 body = bodies[i] = new THREE.Mesh(bodyGeometry, bodyMaterial);
 
                 // Position
-                body.position.x = o.body.distance * AE * km / 200;
+                let distance = o.body.distance * AE * km / 100
+                body.position.x = distance;
                 body.name = key;
 
                 /* Create orbit
                  * ------------------------------ */
-                orbitGeometry   = new THREE.TorusGeometry(o.body.distance * AE * km / 200, 0.2, 16, 100);
+                orbitGeometry   = new THREE.TorusGeometry(distance, 0.3, 16, 100);
                 orbitMaterial   = new THREE.MeshBasicMaterial({ color: 0xffffff });
                 orbit           = new THREE.Mesh(orbitGeometry, orbitMaterial);
                 orbit.material.transparent = true;
@@ -522,7 +632,7 @@
 
         }
 
-        function sceneParticlesRandom(size = 20, length = 10000, minDistance = 50000, maxDistance = 150000) {
+        function sceneParticlesRandom(size = 16, length = 20000, minDistance = 100000, maxDistance = 200000) {
 
             // Init
             geometry = new THREE.SphereBufferGeometry(size, 8, 8);
@@ -670,10 +780,15 @@
             document.addEventListener('updateDate', updateDate, false);
 
             const $daysPast = $('#days');
+            const $simulationSpeed = $('#simulation-speed');
 
             function updateDate() {
                 $daysPast.text(window.daysInSimulationPast);
             }
+
+            $simulationSpeed.on('change keydown', function() {
+                window.simulationSpeed = $(this).val();
+            });
 
             /*
             document.addEventListener('storyUp', getCurrentStoryStep, false);
