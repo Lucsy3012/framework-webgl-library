@@ -82,7 +82,7 @@
             left: 70px;
             bottom: 70px;
             text-align: center;
-            animation: navigator 2s both ease;
+            animation: controller 2s both ease;
             animation-delay: .5s;
             animation-direction: normal;
             animation-iteration-count: 1;
@@ -137,10 +137,10 @@
             bottom: 30%;
             transform-origin: left;
             transform: rotate(-90deg);
-            /* animation: navigator 2s both ease; */
-            /* animation-delay: 2s; */
-            /* animation-direction: normal; */
-            /* animation-iteration-count: 1; */
+            animation: navigatorLeft 2s both ease;
+            animation-delay: .5s;
+            animation-direction: normal;
+            animation-iteration-count: 1;
         }
 
         .navigator ul {
@@ -178,7 +178,7 @@
 
         .navigator li::after {
             display: inline-block;
-            width: 20px;
+            width: 70px;
             font-family: 'Inter', sans-serif;
             font-size: 10px;
             padding: 5px 5px 5px 30px;
@@ -203,16 +203,36 @@
             opacity: 1;
         }
 
-        .navigator li.sun::after { content: "Sun"; }
-        .navigator li.mercury::after { content: "Mercury"; }
-        .navigator li.venus::after { content: "Venus"; }
-        .navigator li.earth::after { content: "Earth"; }
-        .navigator li.mars::after { content: "Mars"; }
-        .navigator li.jupiter::after { content: "Jupiter"; }
-        .navigator li.saturn::after { content: "Saturn"; }
-        .navigator li.uranus::after { content: "Uranus"; }
-        .navigator li.neptune::after { content: "Neptune"; }
-        .navigator li.pluto::after { content: "Pluto"; }
+        /* Body specifics */
+        .navigator li.sun::before           { background-color: #ffbc76; }
+        .navigator li.sun::after            { content: "Sun"; }
+
+        .navigator li.mercury::before       { background-color: #e3d9c7; }
+        .navigator li.mercury::after        { content: "Mercury"; }
+
+        .navigator li.venus::before         { background-color: #eac9b0; }
+        .navigator li.venus::after          { content: "Venus"; }
+
+        .navigator li.earth::before         { background-color: #5f9bd9; }
+        .navigator li.earth::after          { content: "Earth"; }
+
+        .navigator li.mars::before          { background-color: #dd965f; }
+        .navigator li.mars::after           { content: "Mars"; }
+
+        .navigator li.jupiter::before       { background-color: #e9c5a9; }
+        .navigator li.jupiter::after        { content: "Jupiter"; }
+
+        .navigator li.saturn::before        { background-color: #e0c092; }
+        .navigator li.saturn::after         { content: "Saturn"; }
+
+        .navigator li.uranus::before        { background-color: #b8f3fc; }
+        .navigator li.uranus::after         { content: "Uranus"; }
+
+        .navigator li.neptune::before       { background-color: #4289c6; }
+        .navigator li.neptune::after        { content: "Neptune"; }
+
+        .navigator li.pluto::before         { background-color: #947c6c; }
+        .navigator li.pluto::after          { content: "Pluto"; }
 
         .navigator .legend {
             font-family: 'Inter', sans-serif;
@@ -223,10 +243,43 @@
             letter-spacing: 0.2em;
         }
 
-        @keyframes navigator {
+        @keyframes controller {
             0% { opacity: 0; transform: translateY(30px); }
             85% { opacity: 1; }
             100% { transform: translateY(0); }
+        }
+
+        @keyframes navigatorLeft {
+            0% { opacity: 0; left: -100px; }
+            85% { opacity: 1; }
+            100% { left: 70px; }
+        }
+
+        @keyframes navigatorRight {
+            0% { opacity: 0; right: -100px; }
+            85% { opacity: 1; }
+            100% { right: 70px; }
+        }
+
+        /* Navigation right changes
+         ----------------------------------- */
+
+        .navigator.right {
+            top: 30%;
+            left: auto;
+            right: 70px;
+            bottom: auto;
+            transform-origin: right center;
+            animation-name: navigatorRight;
+        }
+
+        .navigator.right li::after {
+            padding: 5px 30px 5px 5px;
+            transform: translate(5px, -75px) rotate(90deg);
+            text-align: right;
+        }
+        .navigator.right li:hover::after {
+            transform: translate(5px, -100px) rotate(90deg);
         }
     </style>
 </head>
@@ -264,6 +317,8 @@
                 </form>
                 <div class="title">Simulation speed</div>
             </div>
+
+            <!-- Navigator left -->
             <div class="navigator">
                 <nav id="navigate-to">
                     <ul>
@@ -279,7 +334,26 @@
                         <li class="pluto" data-body="pluto"></li>
                     </ul>
                 </nav>
-                <div class="legend">Navigate to</div>
+                <div class="legend">Attach to</div>
+            </div>
+
+            <!-- Navigator right -->
+            <div class="navigator right">
+                <nav id="look-at">
+                    <ul>
+                        <li class="sun active" data-body="sun"></li>
+                        <li class="mercury" data-body="mercury"></li>
+                        <li class="venus" data-body="venus"></li>
+                        <li class="earth" data-body="earth"></li>
+                        <li class="mars" data-body="mars"></li>
+                        <li class="jupiter" data-body="jupiter"></li>
+                        <li class="saturn" data-body="saturn"></li>
+                        <li class="uranus" data-body="uranus"></li>
+                        <li class="neptune" data-body="neptune"></li>
+                        <li class="pluto" data-body="pluto"></li>
+                    </ul>
+                </nav>
+                <div class="legend">Look at</div>
             </div>
             <!--
             <div class="navigator">
@@ -321,13 +395,20 @@
         const deg = Math.PI / 180; // one degree
         const sin1 = Math.PI / 2; // one sin
 
+        // Math functions
+        function easeInOut(x) {
+            return Math.pow(Math.sin(x * Math.PI / 2), 2);
+        }
+
         // Story variables
         // const storyUpEvent = new Event('storyUp');
         // const storyDownEvent = new Event('storyDown');
         let snapshotFrame;
         let snapshotCameraPosition = new THREE.Vector3();
+        let snapshotCameraRotation = new THREE.Vector3();
         let storyTransition = false;
         let attached = false;
+        let locked = true;
 
         /*
         let storyStep = 0;
@@ -391,7 +472,7 @@
                     "speed": 0,
                     "rotationSpeed": 0.04,
                     "tilt": 7.25,
-                    "color": "#ffd071"
+                    "color": "#ffbc76"
                 }
             },
             "mercury": {
@@ -579,8 +660,20 @@
 
             window.daysInSimulationPast = daysInSimulationPast;
             window.simulationNavigate = '';
+            window.simulationLookAt = 'sun';
 
-            document.addEventListener('navigatorClick', function(e) {
+            document.addEventListener('navigatorAttach', function() {
+                attached = false;
+                storyTriggerRewrites();
+            }, false);
+
+            document.addEventListener('navigatorDetachEvent', function() {
+                storyTransition = false;
+                attached = false;
+            }, false);
+
+            document.addEventListener('navigatorLookAt', function() {
+                locked = false;
                 storyTriggerRewrites();
             }, false);
 
@@ -613,8 +706,8 @@
             }
 
             // Stars Group Animation
-            particlesGroup.rotation.x += 0.0000155 * window.simulationSpeed;
-            particlesGroup.rotation.y += 0.0000150 * window.simulationSpeed;
+            particlesGroup.rotation.x += 0.0000055 * window.simulationSpeed;
+            particlesGroup.rotation.y += 0.0000050 * window.simulationSpeed;
 
 
             // Single Orbit Animation
@@ -639,6 +732,9 @@
                 bodies.forEach(function(body) {
                     if (body.name === window.simulationNavigate) {
                         storyAnimateCameraPosition(body, framesCount, snapshotFrame, snapshotCameraPosition, 200);
+                    }
+                    if (body.name === window.simulationLookAt) {
+                        storyAnimateCameraRotation(body, framesCount, snapshotFrame, snapshotCameraRotation, 200);
                     }
                 });
             }
@@ -672,9 +768,9 @@
 
                 /* Create body
                  * ------------------------------ */
-                bodyGeometry    = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
-                bodyMaterial    = new THREE.MeshBasicMaterial({ color: o.body.color });
-                body = bodies[i] = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                bodyGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
+                bodyMaterial        = new THREE.MeshBasicMaterial({ color: o.body.color });
+                body = bodies[i]    = new THREE.Mesh(bodyGeometry, bodyMaterial);
 
                 // Position
                 let distance = o.body.distance * AE * km / 100
@@ -683,11 +779,11 @@
 
                 /* Create orbit
                  * ------------------------------ */
-                orbitGeometry   = new THREE.TorusGeometry(distance, 0.3, 16, 100);
+                orbitGeometry   = new THREE.TorusGeometry(distance, 0.3, 32, 100);
                 orbitMaterial   = new THREE.MeshBasicMaterial({ color: 0xffffff });
                 orbit           = new THREE.Mesh(orbitGeometry, orbitMaterial);
                 orbit.material.transparent = true;
-                orbit.material.opacity = 0.3;
+                orbit.material.opacity = 0.2;
                 orbit.rotation.x = 90 * deg;
 
                 // Randomize initial placement
@@ -793,35 +889,6 @@
 
         // Story
 
-        // Increase story count (general)
-        function storyUp(e) {
-            const s = window.story,
-
-                // Conditions
-                _key = e.key === 'ArrowUp',
-                _min = s >= 0,
-                _max = s < window.storyFrames.length - 1;
-
-            if (_key && _min && _max) {
-                window.story = s + 1;
-                document.dispatchEvent(storyUpEvent);
-            }
-        }
-
-        // Decrease story count (general)
-        function storyDown(e) {
-            const s = window.story,
-
-                // Conditions
-                _key = e.key === 'ArrowDown',
-                _min = s > 0;
-
-            if (_key && _min) {
-                window.story = s - 1;
-                document.dispatchEvent(storyDownEvent);
-            }
-        }
-
         // Get current status and write to story (general)
         function storyTriggerRewrites() {
 
@@ -831,37 +898,69 @@
             snapshotCameraPosition.x = camera.position.x;
             snapshotCameraPosition.y = camera.position.y;
             snapshotCameraPosition.z = camera.position.z;
+            snapshotCameraRotation.x = camera.rotation.x;
+            snapshotCameraRotation.y = camera.rotation.y;
+            snapshotCameraRotation.z = camera.rotation.z;
         }
 
-        // todo create attach camera position instead of combining both
         function storyAnimateCameraPosition(target, framesCount, storyFrameClicked, snapshotCameraPosition, countTo) {
             let current = camera.position;
             let t = target.getWorldPosition();
             let s = snapshotCameraPosition;
 
-            // Approach 0 to 1 (Math.PI / 2) in (countTo) frames
-            let progress = Math.sin(sin1 / countTo * (framesCount - snapshotFrame));
+            // Approach 0 to 1 with ease-in-out function in y frames
+            let x = (framesCount - snapshotFrame) / countTo;
+            let progress = easeInOut(x);
 
-            // Progress finished : end animation // attach
+            // Attach if progress is completed
             if (attached === true) {
                 current.x = t.x;
-                current.y = t.y;
+                current.y = t.y + 10; // slightly elevated
                 current.z = t.z;
-
-                camera.lookAt(0, 0, 0);
             } else {
+
+                // Set to "attached"
                 if (progress >= 1) {
                     attached = true;
 
-                    // End animation
-                    // storyTransition = false;
-                    // return false;
+                // Slowly navigate to body
                 } else {
                     current.x = s.x + ((t.x - s.x) * progress);
-                    current.y = s.y + ((t.y - s.y) * progress);
+                    current.y = s.y + ((t.y + 10 - s.y) * progress); // slightly elevated
                     current.z = s.z + ((t.z - s.z) * progress);
+                }
+            }
+        }
 
-                    camera.lookAt(0, 0, 0);
+        function storyAnimateCameraRotation(target, framesCount, storyFrameClicked, snapshotCameraRotation, countTo) {
+            let current = camera.rotation;
+            let t = target.getWorldPosition();
+            let s = snapshotCameraRotation;
+
+            // Approach 0 to 1 with ease-in-out function in y frames
+            let x = (framesCount - snapshotFrame) / countTo;
+            let progress = easeInOut(x);
+
+            // Lock if progress is completed
+            if (locked === true) {
+                camera.lookAt(
+                    current.x = t.x,
+                    current.y = t.y,
+                    current.z = t.z
+                );
+            } else {
+
+                // Set to "locked"
+                if (progress >= 1) {
+                    locked = true;
+
+                // Slowly look at body
+                } else {
+                    camera.lookAt(
+                        current.x = s.x + ((t.x - s.x) * progress),
+                        current.y = s.y + ((t.y - s.y) * progress),
+                        current.z = s.z + ((t.z - s.z) * progress)
+                    );
                 }
             }
         }
@@ -888,14 +987,38 @@
 
 
             // Navigator
-            const navigatorClickEvent = new Event('navigatorClick');
-            const $navigatorItem = $('.navigator li');
+            const navigatorAttachEvent = new Event('navigatorAttach');
+            const navigatorDetachEvent = new Event('navigatorDetach');
+            const navigatorLookAtEvent = new Event('navigatorLookAt');
+            const $navigateItem = $('#navigate-to li');
+            const $lookAtItem = $('#look-at li');
 
-            $navigatorItem.on('click', function() {
-                $navigatorItem.removeClass('active');
-                $(this).addClass('active');
-                window.simulationNavigate = $(this).attr('data-body');
-                document.dispatchEvent(navigatorClickEvent);
+            $navigateItem.on('click', function() {
+                const $this = $(this);
+
+                // Detach
+                if ($this.hasClass('active')) {
+                    storyTransition = false;
+                    $navigateItem.removeClass('active');
+                    window.simulationNavigate = '';
+                    document.dispatchEvent(navigatorDetachEvent);
+
+                // Attach
+                } else {
+                    $navigateItem.removeClass('active');
+                    $this.addClass('active');
+                    window.simulationNavigate = $this.attr('data-body');
+                    document.dispatchEvent(navigatorAttachEvent);
+                }
+            });
+
+            $lookAtItem.on('click', function() {
+                const $this = $(this);
+
+                $lookAtItem.removeClass('active');
+                $this.addClass('active');
+                window.simulationLookAt = $this.attr('data-body');
+                document.dispatchEvent(navigatorLookAtEvent);
             });
 
             /*
