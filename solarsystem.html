@@ -133,8 +133,8 @@
             align-items: center;
             flex-direction: row-reverse;
             position: absolute;
+            top: 66%;
             left: 70px;
-            bottom: 30%;
             transform-origin: left;
             transform: rotate(-90deg);
             animation: navigatorLeft 2s both ease;
@@ -268,7 +268,6 @@
             top: 30%;
             left: auto;
             right: 70px;
-            bottom: auto;
             transform-origin: right center;
             animation-name: navigatorRight;
         }
@@ -378,7 +377,7 @@
         import { OrbitControls } from './js/OrbitControls.js';
 
         var container;
-        var camera, scene, renderer, controls;
+        var camera, scene, renderer, controls, loader;
         var mouse, raycaster;
         var framesCount = 0;
 
@@ -446,6 +445,7 @@
 
         // Bodies
         let body, bodyGeometry, bodyMaterial, bodies = [];
+        let atmosphere, atmosphereGeometry, atmosphereMaterial, atmospheres = [];
         let orbit, orbitGeometry, orbitMaterial, orbits = [];
 
         // Simulation
@@ -472,7 +472,11 @@
                     "speed": 0,
                     "rotationSpeed": 0.04,
                     "tilt": 7.25,
-                    "color": "#ffbc76"
+                    "color": "#ffbc76",
+                    "map": "sun.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.1
                 }
             },
             "mercury": {
@@ -485,8 +489,10 @@
                     "speed": 47.36,
                     "rotationSpeed": 0.017,
                     "tilt": 0.034,
-                    "color": "#e3d9c7"
-                }
+                    "color": "#e3d9c7",
+                    "map": "mercury.jpg"
+                },
+                "atmosphere": false
             },
             "venus": {
                 "orbital": {
@@ -496,9 +502,13 @@
                     "radius": 6501.65,
                     "distance": 0.723,
                     "speed": 35.02,
-                    "rotationSpeed": 0.017,
-                    "tilt": 0.0041,
-                    "color": "#eac9b0"
+                    "rotationSpeed": 0.004,
+                    "tilt": 177.36,
+                    "color": "#eac9b0",
+                    "map": "venus.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             },
             "earth": {
@@ -510,8 +520,12 @@
                     "distance": 1,
                     "speed": 29.78,
                     "rotationSpeed": 1,
-                    "tilt": 0.0041,
-                    "color": "#5f9bd9"
+                    "tilt": 23.44,
+                    "color": "#5f9bd9",
+                    "map": "earth.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             },
             "mars": {
@@ -522,9 +536,13 @@
                     "radius": 3396.2,
                     "distance": 1.524,
                     "speed": 24.07,
-                    "rotationSpeed": 1.002,
+                    "rotationSpeed": 0.999,
                     "tilt": 25.19,
-                    "color": "#dd965f"
+                    "color": "#dd965f",
+                    "map": "mars.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             },
             "jupiter": {
@@ -536,9 +554,13 @@
                     "radius": 35746.0,
                     "distance": 5.204,
                     "speed": 13.06,
-                    "rotationSpeed": 0.4125,
+                    "rotationSpeed": 2.4,
                     "tilt": 3.13,
-                    "color": "#e9c5a9"
+                    "color": "#e9c5a9",
+                    "map": "jupiter.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             },
             "saturn": {
@@ -550,9 +572,13 @@
                     "radius": 30134.0,
                     "distance": 9.582,
                     "speed": 9.68,
-                    "rotationSpeed": 0.4375,
+                    "rotationSpeed": 2.285,
                     "tilt": 26.73,
-                    "color": "#e0c092"
+                    "color": "#e0c092",
+                    "map": "saturn.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             },
             "uranus": {
@@ -563,9 +589,13 @@
                     "radius": 25559.0,
                     "distance": 19.201,
                     "speed": 6.81,
-                    "rotationSpeed": 0.71875,
+                    "rotationSpeed": 1.411,
                     "tilt": 97.77,
-                    "color": "#b8f3fc"
+                    "color": "#b8f3fc",
+                    "map": "uranus.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             },
             "neptune": {
@@ -576,9 +606,13 @@
                     "radius": 24764.0,
                     "distance": 30.047,
                     "speed": 5.43,
-                    "rotationSpeed": 0.65,
+                    "rotationSpeed": 1.5,
                     "tilt": 28.32,
-                    "color": "#4289c6"
+                    "color": "#4289c6",
+                    "map": "neptune.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             },
             "pluto": {
@@ -589,9 +623,13 @@
                     "radius": 1187.0,
                     "distance": 39.482,
                     "speed": 4.67,
-                    "rotationSpeed": 0.15,
+                    "rotationSpeed": 0.166,
                     "tilt": 122.53,
-                    "color": "#947c6c"
+                    "color": "#947c6c",
+                    "map": "pluto.jpg"
+                },
+                "atmosphere": {
+                    "elevation": 1.05
                 }
             }
         };
@@ -599,6 +637,12 @@
         // Assign story variables
         // window.story = storyStep;
         // window.storyFrames = storyFrames;
+
+        // Browser Parameters
+        // const queryString = window.location.search;
+        // const urlParams = new URLSearchParams(queryString);
+        // simulationMode = urlParams.get('lights');
+        let simulationMode = false;
 
         init();
         sceneAnimation();
@@ -616,15 +660,19 @@
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 100000);
             camera.position.set(0, 1000, 2000);
-            camera.lookAt(0, 0, 0);
+            // camera.lookAt(0, 0, 0);
 
             // INIT Renderer
             // --------------------------------------
 
-            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor('#080810');
+            renderer.shadowMap.enabled = true;
+
+            if (simulationMode !== true) {
+                renderer.setClearColor('#080810');
+            }
 
             container = document.getElementById('canvas-container');
             container.appendChild(renderer.domElement);
@@ -632,8 +680,15 @@
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
 
+            // INIT LOADER
+            // --------------------------------------
+            loader = new THREE.TextureLoader();
+
             // INIT Options
             // --------------------------------------
+
+            // Lights
+            addLights();
 
             // Controls
             addControls();
@@ -706,8 +761,8 @@
             }
 
             // Stars Group Animation
-            particlesGroup.rotation.x += 0.0000055 * window.simulationSpeed;
-            particlesGroup.rotation.y += 0.0000050 * window.simulationSpeed;
+            // particlesGroup.rotation.x += 0.0000055 * window.simulationSpeed;
+            // particlesGroup.rotation.y += 0.0000050 * window.simulationSpeed;
 
 
             // Single Orbit Animation
@@ -727,14 +782,23 @@
                 }
             }
 
+            // Body Rotation
+            for (let i = 0; i < bodies.length; ++i) {
+                let key = Object.keys(solarsystem)[i];
+                let s = solarsystem;
+                let o = s[key];
+
+                bodies[i].rotation.y += pi2 * o.body.rotationSpeed / fps * window.simulationSpeed;
+            }
+
             // Story Animation
             if (storyTransition === true) {
                 bodies.forEach(function(body) {
                     if (body.name === window.simulationNavigate) {
-                        storyAnimateCameraPosition(body, framesCount, snapshotFrame, snapshotCameraPosition, 200);
+                        storyAnimateCameraPosition(body, framesCount, snapshotFrame, snapshotCameraPosition, 100);
                     }
                     if (body.name === window.simulationLookAt) {
-                        storyAnimateCameraRotation(body, framesCount, snapshotFrame, snapshotCameraRotation, 200);
+                        storyAnimateCameraRotation(body, framesCount, snapshotFrame, snapshotCameraRotation, 100);
                     }
                 });
             }
@@ -760,7 +824,7 @@
                 /* Create groups
                  * ------------------------------ */
                 let gOrbit = new THREE.Group();
-                // let gBody = new THREE.Group();
+                let gBody  = new THREE.Group();
 
                 // Current body
                 let key = Object.keys(s)[i];
@@ -768,47 +832,86 @@
 
                 /* Create body
                  * ------------------------------ */
+
+                // Get body material
+                if (key !== 'sun') {
+                    bodyMaterial    = new THREE.MeshLambertMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
+                } else {
+                    bodyMaterial    = new THREE.MeshBasicMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
+                }
+
                 bodyGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
-                bodyMaterial        = new THREE.MeshBasicMaterial({ color: o.body.color });
                 body = bodies[i]    = new THREE.Mesh(bodyGeometry, bodyMaterial);
 
                 // Position
-                let distance = o.body.distance * AE * km / 100
+                let distance = o.body.distance * AE * km / 100;
                 body.position.x = distance;
+
+                // Tilt
+                body.rotation.x = o.body.tilt * deg;
                 body.name = key;
+
+
+                /* Create atmosphere
+                 * ------------------------------ */
+                if (o.atmosphere !== false) {
+                    atmosphereGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km * o.atmosphere.elevation, 64, 64);
+                    atmosphereMaterial        = new THREE.MeshLambertMaterial({color: o.body.color});
+                    // atmosphereMaterial        = new THREE.MeshBasicMaterial({color: o.body.color});
+                    atmosphere                = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+
+                    atmosphere.position.x = distance;
+                    atmosphere.material.transparent = true;
+                    atmosphere.name = key;
+
+                    // if lights are on
+                    if (simulationMode === true) {
+                        atmosphere.material.blending = 2;
+                        atmosphere.material.opacity = 0.15;
+                    } else {
+                        atmosphere.material.blending = 2;
+                        atmosphere.material.opacity = 1;
+                    }
+
+                    // Add to local group
+                    gBody.add(atmosphere);
+                }
+
 
                 /* Create orbit
                  * ------------------------------ */
-                orbitGeometry   = new THREE.TorusGeometry(distance, 0.3, 32, 100);
-                orbitMaterial   = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                orbit           = new THREE.Mesh(orbitGeometry, orbitMaterial);
-                orbit.material.transparent = true;
-                orbit.material.opacity = 0.2;
-                orbit.rotation.x = 90 * deg;
+                if (simulationMode !== true) {
+                    orbitGeometry = new THREE.TorusGeometry(distance, 0.3, 32, 100);
+                    orbitMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
+                    orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+                    orbit.material.transparent = true;
+                    orbit.material.opacity = 0.1;
+                    orbit.rotation.x = 90 * deg;
+
+                    // Randomize initial placement
+                    orbit.rotation.z = THREE.MathUtils.randFloatSpread(180) * deg;
+                }
 
                 // Randomize initial placement
                 gOrbit.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg;
-                orbit.rotation.z = THREE.MathUtils.randFloatSpread(180) * deg;
 
 
                 // Add body to local group
-                // gBody.add(body);
+                gBody.add(body);
                 // bodies[i] = gBody;
 
                 // Add local group to orbit group
                 gOrbit.add(orbit);
-                gOrbit.add(body);
-                // gOrbit.add(gBody);
+                // gOrbit.add(body);
+                gOrbit.add(gBody);
                 orbits[i] = gOrbit;
 
                 // Add orbit group to solarsystem group and scene
                 scene.add(gOrbit);
-
             }
-
         }
 
-        function sceneParticlesRandom(size = 16, length = 20000, minDistance = 100000, maxDistance = 200000) {
+        function sceneParticlesRandom(size = 16, length = 10000, minDistance = 100000, maxDistance = 200000) {
 
             // Init
             geometry = new THREE.SphereBufferGeometry(size, 8, 8);
@@ -849,13 +952,29 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
+        // Lights
+        function addLights(color = solarsystem.sun.body.color) {
+            if (simulationMode === true) {
+                ambientLight = new THREE.AmbientLight(0xffffff, 0);
+                scene.add(ambientLight);
+            } else {
+                ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
+                scene.add(ambientLight);
+            }
+
+            pointLight = new THREE.PointLight(0xffffff, 0.25, 100000, 0.9);
+            pointLight.position.set(0, 0, 0);
+            pointLight.castShadow = true;
+            pointLight.shadow.mapSize.width = 2048;
+            pointLight.shadow.mapSize.height = 2048;
+            scene.add(pointLight);
+        }
+
         // Helpers
         function helperGrid() {
             var grid = new THREE.GridHelper(1000, 0);
             scene.add(grid);
         }
-
-
 
         // Raycasting (find intersecting elements)
         function mouseVectoring(e) {
@@ -907,16 +1026,27 @@
             let current = camera.position;
             let t = target.getWorldPosition();
             let s = snapshotCameraPosition;
+            let r = target.geometry.parameters.radius;
 
             // Approach 0 to 1 with ease-in-out function in y frames
             let x = (framesCount - snapshotFrame) / countTo;
             let progress = easeInOut(x);
 
+            // Get if position is positive or negative
+            let multiplicator = new THREE.Vector3(2.5, 2.5, 5);
+
+            // Define multiplications for elevated view of body
+            let elevation = new THREE.Vector3();
+            elevation.x = (current.x > 0) ? 1 : -1;
+            elevation.y = 1;
+            elevation.z = (current.z > 0) ? 1 : -1;
+
+
             // Attach if progress is completed
             if (attached === true) {
-                current.x = t.x;
-                current.y = t.y + 10; // slightly elevated
-                current.z = t.z;
+                current.x = t.x + (elevation.x * r * multiplicator.x);
+                current.y = t.y + (elevation.y * r * multiplicator.y);
+                current.z = t.z + (elevation.z * r * multiplicator.z);
             } else {
 
                 // Set to "attached"
@@ -925,9 +1055,9 @@
 
                 // Slowly navigate to body
                 } else {
-                    current.x = s.x + ((t.x - s.x) * progress);
-                    current.y = s.y + ((t.y + 10 - s.y) * progress); // slightly elevated
-                    current.z = s.z + ((t.z - s.z) * progress);
+                    current.x = s.x + ((t.x + (elevation.x * r * multiplicator.x) - s.x) * progress);
+                    current.y = s.y + ((t.y + (elevation.y * r * multiplicator.y) - s.y) * progress);
+                    current.z = s.z + ((t.z + (elevation.z * r * multiplicator.z) - s.z) * progress);
                 }
             }
         }
