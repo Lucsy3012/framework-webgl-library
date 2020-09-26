@@ -8,6 +8,7 @@
     <style>
         body { margin: 0; }
         canvas { display: block; }
+        canvas:focus { outline: none; }
         .story--holder {
             position: relative;
             display: flex;
@@ -285,26 +286,6 @@
 <body>
 
     <div class="story--holder" id="universe">
-        <!--
-        <div class="section--inner">
-            <div class="story" data-step="1">
-                <h2>The Earth</h2>
-                <p>Mankind's only place for redemption</p>
-            </div>
-            <div class="story" data-step="2">
-                <h2>Mars</h2>
-                <p>Lorem ipsum dolor sit amet, consetetur elitr.</p>
-            </div>
-            <div class="story" data-step="3">
-                <h2>Jupiter</h2>
-                <p>Lorem ipsum dolor sit amet, consetetur elitr.</p>
-            </div>
-            <div class="story" data-step="4">
-                <h2>Saturn</h2>
-                <p>Lorem ipsum dolor sit amet, consetetur elitr.</p>
-            </div>
-        </div>
-        -->
         <div id="canvas-container">
             <div class="controller days-passed">
                 <div class="value" id="days">0</div>
@@ -381,9 +362,8 @@
         var mouse, raycaster;
         var framesCount = 0;
 
-        var lightHelper, ambientLight, pointLight, directionalLight, hemisphereLight, cameraLight;
+        var ambientLight, pointLight;
 
-        var wireframe;
         let particlesGroup = new THREE.Group(),
             solarsystemGroup = new THREE.Group();
         let particles = [],
@@ -410,27 +390,6 @@
         let locked = true;
 
         /*
-        let storyStep = 0;
-        const storyFrames = [
-            {
-                camera: { position: { x: 600, y: -420, z: -150 } }
-            },
-            {
-                camera: { position: { x: 400, y: -320, z: -120 } }
-            },
-            {
-                camera: { position: { x: 200, y: -220, z: -90 } }
-            },
-            {
-                camera: { position: { x: 0, y: -120, z: -60 } }
-            },
-            {
-                camera: { position: { x: 0, y: 0, z: 400 } }
-            }
-        ];
-        */
-
-        /*
          * Solarsystem Documentation
          *
          * AE in km
@@ -445,11 +404,11 @@
 
         // Bodies
         let body, bodyGeometry, bodyMaterial, bodies = [];
-        let atmosphere, atmosphereGeometry, atmosphereMaterial, atmospheres = [];
+        let atmosphere, atmosphereGeometry, atmosphereMaterial;
         let orbit, orbitGeometry, orbitMaterial, orbits = [];
 
         // Simulation
-        let seconds = 0;
+        let milliseconds = 0;
         let daysInSimulationPast = 0;
         const updateDateEvent = new Event('updateDate');
         let simulationSpeed = window.simulationSpeed = 1;
@@ -741,18 +700,18 @@
             scene.updateMatrixWorld();
 
             framesCount++;
-            seconds++;
+            milliseconds++;
 
             // if one second (times the simulation speed) has passed
-            if ((seconds * window.simulationSpeed) / fps >= 1) {
+            if ((milliseconds * window.simulationSpeed) / fps >= 1) {
 
                 // Update days count
                 daysInSimulationPast++;
                 window.daysInSimulationPast = daysInSimulationPast;
                 document.dispatchEvent(updateDateEvent);
 
-                // Reset seconds
-                seconds = 0;
+                // Reset milliseconds
+                milliseconds = 0;
             }
 
             // Stars Animation
@@ -768,8 +727,7 @@
             // Single Orbit Animation
             for (let i = 0; i < orbits.length; ++i) {
                 let key = Object.keys(solarsystem)[i];
-                let s = solarsystem;
-                let o = s[key];
+                let o = solarsystem[key];
 
                 // If orbit around center exists
                 if (o.body.distance > 0) {
@@ -778,15 +736,14 @@
                     let traveledPerDay = o.body.speed * 60 * 60 * 24;
 
                     orbits[i].rotation.y += (pi2 / circum * traveledPerDay) / fps * window.simulationSpeed;
-                    orbits[i].rotation.x = s[key].orbital.tilt * deg;
+                    orbits[i].rotation.x = solarsystem[key].orbital.tilt * deg;
                 }
             }
 
             // Body Rotation
             for (let i = 0; i < bodies.length; ++i) {
                 let key = Object.keys(solarsystem)[i];
-                let s = solarsystem;
-                let o = s[key];
+                let o = solarsystem[key];
 
                 bodies[i].rotation.y += pi2 * o.body.rotationSpeed / fps * window.simulationSpeed;
             }
@@ -809,6 +766,7 @@
         function addControls() {
             controls = new OrbitControls(camera, renderer.domElement);
             controls.screenSpacePanning = true;
+            controls.panSpeed = 0.5;
             controls.minDistance = 0;
             controls.maxDistance = 150000;
             controls.target.set(0, 0, 0);
@@ -962,11 +920,11 @@
                 scene.add(ambientLight);
             }
 
-            pointLight = new THREE.PointLight(0xffffff, 0.25, 100000, 0.9);
+            pointLight = new THREE.PointLight(0xffffff, 0.5, 100000, 0.5);
             pointLight.position.set(0, 0, 0);
-            pointLight.castShadow = true;
-            pointLight.shadow.mapSize.width = 2048;
-            pointLight.shadow.mapSize.height = 2048;
+            // pointLight.castSyadow = true;
+            // pointLight.shadow.mapSize.width = 2048;
+            // pointLight.shadow.mapSize.height = 2048;
             scene.add(pointLight);
         }
 
@@ -1022,7 +980,7 @@
             snapshotCameraRotation.z = camera.rotation.z;
         }
 
-        function storyAnimateCameraPosition(target, framesCount, storyFrameClicked, snapshotCameraPosition, countTo) {
+        function storyAnimateCameraPosition(target, framesCount, snapshotFrame, snapshotCameraPosition, countTo) {
             let current = camera.position;
             let t = target.getWorldPosition();
             let s = snapshotCameraPosition;
@@ -1032,15 +990,14 @@
             let x = (framesCount - snapshotFrame) / countTo;
             let progress = easeInOut(x);
 
-            // Get if position is positive or negative
+            // Define multiplications for elevated view of body
             let multiplicator = new THREE.Vector3(2.5, 2.5, 5);
 
-            // Define multiplications for elevated view of body
+            // Get if position is positive or negative
             let elevation = new THREE.Vector3();
             elevation.x = (current.x > 0) ? 1 : -1;
             elevation.y = 1;
-            elevation.z = (current.z > 0) ? 1 : -1;
-
+            elevation.z = (current.z > 0) ? -1 : 1;
 
             // Attach if progress is completed
             if (attached === true) {
@@ -1050,19 +1007,20 @@
             } else {
 
                 // Set to "attached"
-                if (progress >= 1) {
+                if (x >= 1) {
                     attached = true;
 
-                // Slowly navigate to body
+                    // Slowly navigate to body
                 } else {
                     current.x = s.x + ((t.x + (elevation.x * r * multiplicator.x) - s.x) * progress);
                     current.y = s.y + ((t.y + (elevation.y * r * multiplicator.y) - s.y) * progress);
                     current.z = s.z + ((t.z + (elevation.z * r * multiplicator.z) - s.z) * progress);
                 }
             }
+
         }
 
-        function storyAnimateCameraRotation(target, framesCount, storyFrameClicked, snapshotCameraRotation, countTo) {
+        function storyAnimateCameraRotation(target, framesCount, snapshotFrame, snapshotCameraRotation, countTo) {
             let current = camera.rotation;
             let t = target.getWorldPosition();
             let s = snapshotCameraRotation;
@@ -1081,7 +1039,7 @@
             } else {
 
                 // Set to "locked"
-                if (progress >= 1) {
+                if (x >= 1) {
                     locked = true;
 
                 // Slowly look at body
@@ -1093,6 +1051,9 @@
                     );
                 }
             }
+
+            // Lock controls to fixated body
+            controls.target.set(t.x, t.y, t.z);
         }
 
     </script>
@@ -1150,58 +1111,6 @@
                 window.simulationLookAt = $this.attr('data-body');
                 document.dispatchEvent(navigatorLookAtEvent);
             });
-
-            /*
-            document.addEventListener('storyUp', getCurrentStoryStep, false);
-            document.addEventListener('storyDown', getCurrentStoryStep, false);
-
-            function getCurrentStoryStep() {
-                let $storyStep = $('.story--holder .story');
-
-                $storyStep.each(function() {
-                    let $this = $(this);
-                    let _step = $this.attr('data-step') === window.story.toString();
-
-                    $this.toggleClass('story--active', _step);
-                });
-            }
-
-
-            // Controls Highlighting
-            const $up   = $('#keys .up');
-            const $down = $('#keys .down');
-
-            document.addEventListener('keydown', function(e) { displayArrowKeysHighlight(e) }, false);
-            document.addEventListener('keyup', function(e) { removeArrowKeysHighlight(e) }, false);
-
-            function displayArrowKeysHighlight(e) {
-                const key   = e.key;
-                let _up     = key === 'ArrowUp';
-                let _down   = key === 'ArrowDown';
-
-                if (_up) {
-                    $up.addClass('highlight');
-                }
-
-                if (_down) {
-                    $down.addClass('highlight');
-                }
-            }
-
-            function removeArrowKeysHighlight(e) {
-                const key   = e.key;
-                let _up     = key === 'ArrowUp';
-                let _down   = key === 'ArrowDown';
-
-                if (_up) {
-                    $up.removeClass('highlight');
-                }
-
-                if (_down) {
-                    $down.removeClass('highlight');
-                }
-            }
-            */
         });
     </script>
 
