@@ -874,13 +874,9 @@
                 /* Create orbit
                  * ------------------------------ */
                 if (o.orbital && simulationMode !== true) {
-                    orbitGeometry = new THREE.TorusGeometry(distance, 0.3, 32, 100);
-                    orbitMaterial = new THREE.MeshBasicMaterial({
-                        color: 0xffffff,
-                        transparent: true,
-                        opacity: 0.1
-                    });
-                    orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+                    orbitGeometry   = new THREE.TorusGeometry(distance, 0.3, 32, 100);
+                    orbitMaterial   = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.1});
+                    orbit           = new THREE.Mesh(orbitGeometry, orbitMaterial);
 
                     orbit.rotation.x = 90 * deg;
 
