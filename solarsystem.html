@@ -403,8 +403,9 @@
         */
 
         // Bodies
-        let body, bodyGeometry, bodyMaterial, bodies = [];
+        let body, bodyGeometry, bodyMaterial, bodies = [], gBodies = [];
         let atmosphere, atmosphereGeometry, atmosphereMaterial;
+        let rings, ringsGeometry, ringsMaterial;
         let orbit, orbitGeometry, orbitMaterial, orbits = [];
 
         // Simulation
@@ -538,6 +539,12 @@
                 },
                 "atmosphere": {
                     "elevation": 1.05
+                },
+                "rings": {
+                    // not real sizes,
+                    "innerRadius": 33500,
+                    "outerRadius": 80000,
+                    "map": "saturn-rings.png"
                 }
             },
             "uranus": {
@@ -714,7 +721,8 @@
                 milliseconds = 0;
             }
 
-            // Stars Animation
+            /* Stars Animation
+             * ------------------------------ */
             for (let i = 0; i < particles.length; ++i) {
                 particles[i].material.opacity = (Math.sin((i + framesCount) * 0.01)) + 1.25;
             }
@@ -724,7 +732,8 @@
             // particlesGroup.rotation.y += 0.0000050 * window.simulationSpeed;
 
 
-            // Single Orbit Animation
+            /* Single Orbit Animation
+             * ------------------------------ */
             for (let i = 0; i < orbits.length; ++i) {
                 let key = Object.keys(solarsystem)[i];
                 let o = solarsystem[key];
@@ -735,12 +744,29 @@
                     let circum = radius * Math.PI * 2;
                     let traveledPerDay = o.body.speed * 60 * 60 * 24;
 
-                    orbits[i].rotation.y += (pi2 / circum * traveledPerDay) / fps * window.simulationSpeed;
                     orbits[i].rotation.x = solarsystem[key].orbital.tilt * deg;
+                    orbits[i].rotation.y += (pi2 / circum * traveledPerDay) / fps * window.simulationSpeed;
                 }
             }
 
-            // Body Rotation
+            /* Group Body Counter Rotation
+             * so body isn't tidal locked
+             * ------------------------------ */
+            for (let i = 0; i < gBodies.length; ++i) {
+                let key = Object.keys(solarsystem)[i];
+                let o = solarsystem[key];
+
+                if (i !== 0) {
+                    let radius = o.body.distance * AE;
+                    let circum = radius * Math.PI * 2;
+                    let traveledPerDay = o.body.speed * 60 * 60 * 24;
+
+                    gBodies[i].rotation.y -= (pi2 / circum * traveledPerDay) / fps * window.simulationSpeed;
+                }
+            }
+
+            /* Body Rotation
+             * ------------------------------ */
             for (let i = 0; i < bodies.length; ++i) {
                 let key = Object.keys(solarsystem)[i];
                 let o = solarsystem[key];
@@ -787,42 +813,35 @@
                 // Current body
                 let key = Object.keys(s)[i];
                 let o   = s[key];
+                let distance = o.body.distance * AE * km / 100;
 
                 /* Create body
                  * ------------------------------ */
-
-                // Get body material
                 if (key !== 'sun') {
-                    bodyMaterial    = new THREE.MeshLambertMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
+                    bodyMaterial = new THREE.MeshLambertMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
                 } else {
-                    bodyMaterial    = new THREE.MeshBasicMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
+                    bodyMaterial = new THREE.MeshBasicMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
                 }
 
                 bodyGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
                 body = bodies[i]    = new THREE.Mesh(bodyGeometry, bodyMaterial);
 
-                // Position
-                let distance = o.body.distance * AE * km / 100;
-                body.position.x = distance;
-
                 // Tilt
                 body.rotation.x = o.body.tilt * deg;
+
+                // Add to local group
                 body.name = key;
+                gBody.add(body);
 
 
                 /* Create atmosphere
                  * ------------------------------ */
-                if (o.atmosphere !== false) {
-                    atmosphereGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km * o.atmosphere.elevation, 64, 64);
-                    atmosphereMaterial        = new THREE.MeshLambertMaterial({color: o.body.color});
-                    // atmosphereMaterial        = new THREE.MeshBasicMaterial({color: o.body.color});
-                    atmosphere                = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+                if (o.atmosphere) {
+                    atmosphereGeometry  = new THREE.SphereBufferGeometry(o.body.radius * km * o.atmosphere.elevation, 64, 64);
+                    atmosphereMaterial  = new THREE.MeshLambertMaterial({color: o.body.color, transparent: true});
+                    atmosphere          = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
 
-                    atmosphere.position.x = distance;
-                    atmosphere.material.transparent = true;
-                    atmosphere.name = key;
-
-                    // if lights are on
+                    // if simulation mode is activated
                     if (simulationMode === true) {
                         atmosphere.material.blending = 2;
                         atmosphere.material.opacity = 0.15;
@@ -831,36 +850,57 @@
                         atmosphere.material.opacity = 1;
                     }
 
-                    // Add to local group
+                    // Name and add to local group
+                    atmosphere.name = key + '-atmosphere';
                     gBody.add(atmosphere);
                 }
 
 
+                /* Create rings
+                 * ------------------------------ */
+                if (o.rings) {
+                    ringsGeometry   = new THREE.RingBufferGeometry(o.rings.innerRadius * km, o.rings.outerRadius * km, 64, 64);
+                    ringsMaterial   = new THREE.MeshLambertMaterial({map: loader.load('img/' + o.rings.map), transparent: true, side: THREE.DoubleSide});
+                    rings           = new THREE.Mesh(ringsGeometry, ringsMaterial);
+
+                    // Tilt
+                    rings.rotation.x = (o.body.tilt + 90) * deg;
+
+                    // Name and add to local group
+                    rings.name = key + '-rings';
+                    gBody.add(rings);
+                }
+
                 /* Create orbit
                  * ------------------------------ */
-                if (simulationMode !== true) {
+                if (o.orbital && simulationMode !== true) {
                     orbitGeometry = new THREE.TorusGeometry(distance, 0.3, 32, 100);
-                    orbitMaterial = new THREE.MeshBasicMaterial({color: 0xffffff});
+                    orbitMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xffffff,
+                        transparent: true,
+                        opacity: 0.1
+                    });
                     orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
-                    orbit.material.transparent = true;
-                    orbit.material.opacity = 0.1;
+
                     orbit.rotation.x = 90 * deg;
 
                     // Randomize initial placement
                     orbit.rotation.z = THREE.MathUtils.randFloatSpread(180) * deg;
                 }
 
-                // Randomize initial placement
-                gOrbit.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg;
+                /* Refine body group
+                 * ------------------------------ */
+                gBody.name = key + '-group';
+                gBody.position.x = distance; // distance from center
+                gBody.rotation.x = o.body.tilt * deg; // tilt towards center
+                gBody.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize
+                gBodies[i] = gBody;
 
-
-                // Add body to local group
-                gBody.add(body);
-                // bodies[i] = gBody;
-
-                // Add local group to orbit group
+                /* Define orbit group
+                 * ------------------------------ */
+                gOrbit.name = key + '-orbit';
+                gOrbit.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize initial placement
                 gOrbit.add(orbit);
-                // gOrbit.add(body);
                 gOrbit.add(gBody);
                 orbits[i] = gOrbit;
 
@@ -911,7 +951,7 @@
         }
 
         // Lights
-        function addLights(color = solarsystem.sun.body.color) {
+        function addLights() {
             if (simulationMode === true) {
                 ambientLight = new THREE.AmbientLight(0xffffff, 0);
                 scene.add(ambientLight);
@@ -922,9 +962,6 @@
 
             pointLight = new THREE.PointLight(0xffffff, 0.5, 100000, 0.5);
             pointLight.position.set(0, 0, 0);
-            // pointLight.castSyadow = true;
-            // pointLight.shadow.mapSize.width = 2048;
-            // pointLight.shadow.mapSize.height = 2048;
             scene.add(pointLight);
         }
 
