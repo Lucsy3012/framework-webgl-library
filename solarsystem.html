@@ -6,7 +6,7 @@
     <title>Solarsystem</title>
 
     <style>
-        body { margin: 0; }
+        body { margin: 0; font-family: 'Inter', sans-serif; }
         canvas { display: block; }
         canvas:focus { outline: none; }
         .story--holder {
@@ -110,9 +110,9 @@
 
         .controller .title {
             margin-top: 10px;
-            font-family: 'Inter', sans-serif;
             font-size: 13px;
             font-weight: 300;
+            letter-spacing: 0.02em;
             color: #ffffff77;
         }
 
@@ -124,6 +124,67 @@
             padding-left: 46px;
             border-left: 1px solid #fff3;
         }
+
+        /* Body information
+         ----------------------------------- */
+        .body-information {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .body-information article {
+            position: absolute;
+            left: 70px;
+            top: 60px;
+            transition: all .5s ease;
+            opacity: 0;
+            transform: translateX(-30px);
+            pointer-events: none;
+            touch-action: none;
+        }
+
+        .body-information article.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: initial;
+            touch-action: initial;
+        }
+
+        .body-information .title {
+            margin: 0 0 10px;
+            color: #ffffff;
+            text-shadow: 0 0 6px #ffffffaa;
+            font-size: 13px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .body-information hr {
+            border-width: 1px 0 0;
+            border-color: #fff3;
+        }
+
+        .body-information dl {
+            display: grid;
+            grid-template-columns: 110px auto;
+            grid-gap: 3px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 0.02em;
+            color: #ffffff77;
+        }
+
+        .body-information dl dt,
+        .body-information dl dd {
+            display: inline-block;
+            margin: 0;
+        }
+
+        .body-information dl dt::after {
+            content: ":";
+        }
+
 
         /* Navigation
          ----------------------------------- */
@@ -236,7 +297,6 @@
         .navigator li.pluto::after          { content: "Pluto"; }
 
         .navigator .legend {
-            font-family: 'Inter', sans-serif;
             font-size: 13px;
             font-weight: 400;
             color: #ffffff55;
@@ -287,6 +347,163 @@
 
     <div class="story--holder" id="universe">
         <div id="canvas-container">
+            <div class="body-information">
+
+                <!-- Sun -->
+                <article id="sun-information">
+                    <div class="title">Sun ☉</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>696,342 km</dd>
+                        <dt>Rotation tilt</dt><dd>7.25°</dd>
+                        <dt>Rotation speed</dt><dd>25 days 6 hours</dd>
+                    </dl>
+                </article>
+
+                <!-- Mercury -->
+                <article id="mercury-information">
+                    <div class="title">Mercury ☿</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>4,880 km</dd>
+                        <dt>Rotation tilt</dt><dd>0.034°</dd>
+                        <dt>Rotation speed</dt><dd>58 days 15 hours</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>0.3871 AE</dd>
+                        <dt>Orbital tilt</dt><dd>7.0049°</dd>
+                        <dt>Orbital speed</dt><dd>~ 47.36 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Venus -->
+                <article id="venus-information">
+                    <div class="title">Venus ♀</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>6,501.65 km</dd>
+                        <dt>Rotation tilt</dt><dd>177.36°</dd>
+                        <dt>Rotation speed</dt><dd>243 days 36 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>0.723 AE</dd>
+                        <dt>Orbital tilt</dt><dd>8.3947°</dd>
+                        <dt>Orbital speed</dt><dd>~ 35.02 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Earth -->
+                <article id="earth-information">
+                    <div class="title">Earth 🜨</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>6,378.135 km</dd>
+                        <dt>Rotation tilt</dt><dd>23.44°</dd>
+                        <dt>Rotation speed</dt><dd>23 hours 56 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>1 AE</dd>
+                        <dt>Orbital tilt</dt><dd>0.0001°</dd>
+                        <dt>Orbital speed</dt><dd>~ 29.78 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Mars -->
+                <article id="mars-information">
+                    <div class="title">Mars ♂</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>3,396.2 km</dd>
+                        <dt>Rotation tilt</dt><dd>25.19°</dd>
+                        <dt>Rotation speed</dt><dd>24 hours 37 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>1,524 AE</dd>
+                        <dt>Orbital tilt</dt><dd>1.8506°</dd>
+                        <dt>Orbital speed</dt><dd>~ 24.07 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Jupiter -->
+                <article id="jupiter-information">
+                    <div class="title">Jupiter ♃</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>71,492 km</dd>
+                        <dt>Rotation tilt</dt><dd>3.13°</dd>
+                        <dt>Rotation speed</dt><dd>9 hours 55 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>5.204 AE</dd>
+                        <dt>Orbital tilt</dt><dd>1.304°</dd>
+                        <dt>Orbital speed</dt><dd>~ 13.06 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Saturn -->
+                <article id="saturn-information">
+                    <div class="title">Saturn ♄</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>60,268 km</dd>
+                        <dt>Rotation tilt</dt><dd>26.73°</dd>
+                        <dt>Rotation speed</dt><dd>10 hours 33 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>9.582 AE</dd>
+                        <dt>Orbital tilt</dt><dd>2.4845°</dd>
+                        <dt>Orbital speed</dt><dd>~ 9.68 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Uranus -->
+                <article id="uranus-information">
+                    <div class="title">Uranus ⛢</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>25,559 km</dd>
+                        <dt>Rotation tilt</dt><dd>97.77°</dd>
+                        <dt>Rotation speed</dt><dd>17 hours 14 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>19.201 AE</dd>
+                        <dt>Orbital tilt</dt><dd>0.7699°</dd>
+                        <dt>Orbital speed</dt><dd>~ 6.81 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Neptune -->
+                <article id="neptune-information">
+                    <div class="title">Neptune ♆</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>24,764 km</dd>
+                        <dt>Rotation tilt</dt><dd>28.32°</dd>
+                        <dt>Rotation speed</dt><dd>15 hours 58 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>30.047 AE</dd>
+                        <dt>Orbital tilt</dt><dd>1.7692°</dd>
+                        <dt>Orbital speed</dt><dd>~ 5.43 km/s</dd>
+                    </dl>
+                </article>
+
+                <!-- Pluto -->
+                <article id="pluto-information">
+                    <div class="title">Pluto ♇</div>
+                    <dl class="information">
+                        <dt>Radius</dt><dd>1,187 km</dd>
+                        <dt>Rotation tilt</dt><dd>122.53°</dd>
+                        <dt>Rotation speed</dt><dd>6 days 9 hours 43 minutes</dd>
+                    </dl>
+                    <hr>
+                    <dl class="information">
+                        <dt>Orbital radius</dt><dd>39.482 AE</dd>
+                        <dt>Orbital tilt</dt><dd>17.1418°</dd>
+                        <dt>Orbital speed</dt><dd>~ 4.67 km/s</dd>
+                    </dl>
+                </article>
+            </div>
+
             <div class="controller days-passed">
                 <div class="value" id="days">0</div>
                 <div class="title">Days passed</div>
@@ -335,17 +552,6 @@
                 </nav>
                 <div class="legend">Look at</div>
             </div>
-            <!--
-            <div class="navigator">
-                <div id="keys">
-                    <div class="up"></div>
-                    <div class="left"></div>
-                    <div class="right"></div>
-                    <div class="down"></div>
-                </div>
-                <div class="legend">Use the up- and arrow key to navigate</div>
-            </div>
-            -->
         </div>
     </div>
 
@@ -426,7 +632,7 @@
                     "tilt": 0
                 },
                 "body": {
-                    // "radius": 700000.00,
+                    // "radius": 696342.00,
                     "radius": 100000.00,
                     "distance": 0,
                     "speed": 0,
@@ -468,7 +674,7 @@
                     "map": "venus.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 }
             },
             "earth": {
@@ -485,7 +691,7 @@
                     "map": "earth.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 }
             },
             "mars": {
@@ -502,7 +708,7 @@
                     "map": "mars.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 }
             },
             "jupiter": {
@@ -671,7 +877,7 @@
             // Update renderer and camera when resizing
             window.addEventListener('resize', onWindowResize, false);
             window.addEventListener('mousemove', mouseVectoring, false);
-            window.addEventListener('click', function() { intersectClick(bodies) }, false);
+            window.addEventListener('click', function() { intersectClick(bodies); }, false);
 
             // Grid
             // helperGrid();
@@ -982,16 +1188,12 @@
             return raycaster.intersectObjects(objs);
         }
 
-        function intersectHoverTrue(objs) {
-            console.log(objs[0].object.name);
-        }
-
         function intersectClick(objs) {
             var intersects = rayCastingObjs(objs);
 
-            // todo
             if (intersects.length > 0) {
-                console.log(intersects[0].object.name);
+                let clickBodyEvent = new CustomEvent('clickBody', { detail: { 'body': intersects[0].object.name } });
+                document.dispatchEvent(clickBodyEvent);
             }
         }
 
@@ -1144,6 +1346,25 @@
                 window.simulationLookAt = $this.attr('data-body');
                 document.dispatchEvent(navigatorLookAtEvent);
             });
+
+
+
+            // Body information
+            const $bodyInformation = $('.body-information');
+            let $bodyInformations = $bodyInformation.find('article');
+
+            document.addEventListener('click', hideBodyInformation, false);
+            document.addEventListener('clickBody', function(e) { showBodyInformation(e) }, false);
+
+            function showBodyInformation(e) {
+                console.log('show');
+                $bodyInformation.find('#' + e.detail.body + '-information').addClass('active');
+            }
+
+            function hideBodyInformation() {
+                console.log('hide');
+                $bodyInformations.removeClass('active');
+            }
         });
     </script>
 
