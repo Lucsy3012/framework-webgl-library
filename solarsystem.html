@@ -6,7 +6,7 @@
     <title>Solarsystem</title>
 
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; }
+        body { margin: 0; background-color: #000; font-family: 'Inter', sans-serif; }
         canvas { display: block; }
         canvas:focus { outline: none; }
         .story--holder {
@@ -73,6 +73,8 @@
             width: 100vw;
             height: 100vh;
             z-index: 1;
+            transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
+            transition-delay: 0.25s;
         }
 
         /* Controller
@@ -341,9 +343,63 @@
         .navigator.right li:hover::after {
             transform: translate(5px, -100px) rotate(90deg);
         }
+
+        /* Loading
+         ----------------------------------- */
+
+        #canvas-container {
+            transform: translateY(50%);
+        }
+
+        #loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 100vh;
+            background: linear-gradient(220deg, rgb(11 11 14) 0%, rgb(2 4 14) 100%);
+            background-color: #131315;
+            transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
+            transition-delay: 0.25s;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        #loader .loading-text {
+            font-size: 1.5vmax;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            text-shadow: 0 0 4px #ffffff66;
+            color: #fff;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+            transition: all 1.5s cubic-bezier(0.67, 0.04, 0.18, 0.96);
+        }
+
+        body.loaded #canvas-container {
+            transform: translateY(0);
+        }
+
+        body.loaded #loader {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.loaded #loader .loading-text {
+            margin-top: 5vmax;
+            transform: translateY(100%);
+            clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+        }
     </style>
 </head>
 <body>
+
+    <div id="loader">
+        <div class="loading-text">Loading assets</div>
+    </div>
 
     <div class="story--holder" id="universe">
         <div id="canvas-container">
@@ -510,7 +566,7 @@
             </div>
             <div class="controller simulation-speed">
                 <form>
-                    <input class="value" id="simulation-speed" type="number" value="1" />
+                    <input class="value" id="simulation-speed" type="number" value="0.02" />
                 </form>
                 <div class="title">Simulation speed</div>
             </div>
@@ -610,7 +666,7 @@
 
         // Bodies
         let body, bodyGeometry, bodyMaterial, bodies = [], gBodies = [];
-        let atmosphere, atmosphereGeometry, atmosphereMaterial;
+        let atmosphere, atmosphereGeometry, atmosphereMaterial, atmospheres = [];
         let rings, ringsGeometry, ringsMaterial;
         let orbit, orbitGeometry, orbitMaterial, orbits = [];
 
@@ -618,7 +674,7 @@
         let milliseconds = 0;
         let daysInSimulationPast = 0;
         const updateDateEvent = new Event('updateDate');
-        let simulationSpeed = window.simulationSpeed = 1;
+        let simulationSpeed = window.simulationSpeed = 0.02;
 
         // Variables
         const AE = 149597870;
@@ -674,7 +730,11 @@
                     "map": "venus.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.025
+                    "elevation": 1.025,
+                    "opacity": 0.9,
+                    "blending": 1,
+                    "rotationMultiplicator": 120,
+                    "map": "venus_atmosphere.jpg"
                 }
             },
             "earth": {
@@ -691,7 +751,11 @@
                     "map": "earth.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.025
+                    "elevation": 1.025,
+                    "opacity": 1,
+                    "blending": 1,
+                    "rotationMultiplicator": 1.1,
+                    "map": "earth_atmosphere.png"
                 }
             },
             "mars": {
@@ -814,7 +878,7 @@
         // const queryString = window.location.search;
         // const urlParams = new URLSearchParams(queryString);
         // simulationMode = urlParams.get('lights');
-        let simulationMode = false;
+        let simulationMode = true;
 
         init();
         sceneAnimation();
@@ -840,7 +904,9 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
+
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
             if (simulationMode !== true) {
                 renderer.setClearColor('#080810');
@@ -870,6 +936,8 @@
 
             // Create particles
             sceneParticlesRandom();
+
+            console.log(gBodies);
 
             // Create group
             sceneGroup(particlesGroup, particles);
@@ -978,6 +1046,11 @@
                 let o = solarsystem[key];
 
                 bodies[i].rotation.y += pi2 * o.body.rotationSpeed / fps * window.simulationSpeed;
+
+                // Atmosphere rotation
+                if (atmospheres[i] && o.atmosphere.rotationMultiplicator) {
+                    atmospheres[i].rotation.y += pi2 * o.body.rotationSpeed / fps * window.simulationSpeed * o.atmosphere.rotationMultiplicator;
+                }
             }
 
             // Story Animation
@@ -1017,16 +1090,17 @@
                 let gBody  = new THREE.Group();
 
                 // Current body
-                let key = Object.keys(s)[i];
-                let o   = s[key];
-                let distance = o.body.distance * AE * km / 100;
+                const key = Object.keys(s)[i];
+                const o   = s[key];
+                const distance = o.body.distance * AE * km / 100;
+                const imageFolder = (simulationMode === true) ? 'img/highres/' : 'img/';
 
                 /* Create body
                  * ------------------------------ */
                 if (key !== 'sun') {
-                    bodyMaterial = new THREE.MeshLambertMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
+                    bodyMaterial = new THREE.MeshLambertMaterial({map: loader.load(imageFolder + o.body.map), color: o.body.color});
                 } else {
-                    bodyMaterial = new THREE.MeshBasicMaterial({map: loader.load('img/' + o.body.map), color: o.body.color});
+                    bodyMaterial = new THREE.MeshBasicMaterial({map: loader.load(imageFolder + o.body.map), color: o.body.color});
                 }
 
                 bodyGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
@@ -1045,16 +1119,31 @@
                 if (o.atmosphere) {
                     atmosphereGeometry  = new THREE.SphereBufferGeometry(o.body.radius * km * o.atmosphere.elevation, 64, 64);
                     atmosphereMaterial  = new THREE.MeshLambertMaterial({color: o.body.color, transparent: true});
-                    atmosphere          = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+                    atmosphere = atmospheres[i] = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+
+                    // if has texture : add to material
+                    if (o.atmosphere.map) {
+                        atmosphere.material.map = loader.load(imageFolder + o.atmosphere.map);
+                    }
 
                     // if simulation mode is activated
                     if (simulationMode === true) {
-                        atmosphere.material.blending = 2;
-                        atmosphere.material.opacity = 0.15;
+
+                        // apply real data if available
+                        if (o.atmosphere.map && o.atmosphere.opacity && o.atmosphere.blending) {
+                            atmosphere.material.blending = o.atmosphere.blending;
+                            atmosphere.material.opacity = o.atmosphere.opacity;
+                        } else {
+                            atmosphere.material.blending = 2;
+                            atmosphere.material.opacity = 0.15;
+                        }
                     } else {
                         atmosphere.material.blending = 2;
                         atmosphere.material.opacity = 1;
                     }
+
+                    // Tilt
+                    atmosphere.rotation.x = o.body.tilt * deg;
 
                     // Name and add to local group
                     atmosphere.name = key + '-atmosphere';
@@ -1164,6 +1253,9 @@
 
             pointLight = new THREE.PointLight(0xffffff, 0.5, 100000, 0.5);
             pointLight.position.set(0, 0, 0);
+            pointLight.castShadow = true;
+            pointLight.shadow.mapSize.width = 2048;
+            pointLight.shadow.mapSize.height = 2048;
             scene.add(pointLight);
         }
 
@@ -1294,7 +1386,10 @@
     </script>
 
     <script>
+
         $(document).ready(function() {
+
+            $('body').addClass('loaded');
 
             // Simulation
             document.addEventListener('updateDate', updateDate, false);
@@ -1357,12 +1452,10 @@
             document.addEventListener('clickBody', function(e) { showBodyInformation(e) }, false);
 
             function showBodyInformation(e) {
-                console.log('show');
                 $bodyInformation.find('#' + e.detail.body + '-information').addClass('active');
             }
 
             function hideBodyInformation() {
-                console.log('hide');
                 $bodyInformations.removeClass('active');
             }
         });
