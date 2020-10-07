@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="img/favicon.ico">
+    <title>Particle Cube</title>
+
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <script src="js/three.js"></script>
+    <script type="module">
+
+        // import * as THREE from './js/three.js';
+        import { OrbitControls } from './js/OrbitControls.js';
+
+        var container;
+        var camera, scene, renderer, controls;
+        var framesCount = 0;
+
+        var lightHelper, ambientLight, pointLight, directionalLight, hemisphereLight, cameraLight;
+
+        var wireframe;
+        var localGroup;
+        var particles = [],
+            particle, geometry, material;
+
+        // Math variables
+        const deg = Math.PI / 180; // one degree
+
+        init();
+        sceneAnimation();
+
+        // Initiating Scene
+        function init() {
+
+            // INIT Scene
+            // --------------------------------------
+
+            scene = new THREE.Scene();
+
+            // INIT Camera
+            // --------------------------------------
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 10000);
+            camera.position.set(15, 15, 15);
+            camera.rotation.set(-45, 35, 30);
+
+            // INIT Renderer
+            // --------------------------------------
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor('#0f0f1f');
+
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            container = document.getElementById('canvas-container');
+            container.appendChild( renderer.domElement );
+
+            // INIT Options
+            // --------------------------------------
+
+            // Lights
+            addLights();
+
+            // Controls
+            addControls();
+
+            // Create particles
+            sceneParticles();
+
+            // Create fog
+            // scene.fog = new THREE.FogExp2(0x0f0f1f, 0.065);
+
+            // Create group
+            sceneGroup(localGroup, particles);
+
+            // Update renderer and camera when resizing
+            window.addEventListener('resize', onWindowResize, false);
+
+            // INIT Helper
+            // --------------------------------------
+
+            // Grid
+            // helperGrid();
+
+            // Lights Helper
+            // helperLight();
+        }
+
+
+        // Rendering the scene
+        function sceneAnimation() {
+            requestAnimationFrame(sceneAnimation);
+
+            framesCount++;
+
+            // Cube Rotation
+            localGroup.rotation.y = Math.cos(framesCount * 0.01);
+            localGroup.rotation.z = Math.sin(framesCount * 0.01);
+
+            renderer.render(scene, camera);
+        }
+
+        function addLights(ambientColor = 0xffa030, directionalColor = 0xffffff) {
+            // ambientLight = new THREE.AmbientLight(ambientColor, 0.1);
+            // scene.add(ambientLight);
+
+            hemisphereLight = new THREE.HemisphereLight(0xffff0f, 0xffffff, 1);
+            scene.add(hemisphereLight);
+
+            directionalLight = new THREE.DirectionalLight(directionalColor, 0.75, 100);
+            directionalLight.position.set(0, 4, 0);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+        }
+
+        function addControls() {
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.screenSpacePanning = true;
+            controls.minDistance = 0;
+            controls.maxDistance = 80;
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        function sceneParticles(size = 0.03, length = 5000, minDistance = 7, maxDistance = 8) {
+            geometry    = new THREE.SphereBufferGeometry(size, 16, 16);
+
+            for (let i = 0; i < length; ++i) {
+
+                material    = new THREE.MeshBasicMaterial( { color: "hsl(21, 100%, 64%)" } );
+                particle    = particles[i] = new THREE.Mesh(geometry, material);
+                particle.material.transparent = true;
+
+                const randomX = Math.random() < 0.5 ? -1 : 1;
+                const randomY = Math.random() < 0.5 ? -1 : 1;
+                const randomZ = Math.random() < 0.5 ? -1 : 1;
+
+                if (Math.random() < 0.33) {
+                    particle.position.x = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomX * Math.random();
+                    particle.position.y = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomY;
+                    particle.position.z = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomZ;
+                } else if (Math.random() < 0.66) {
+                    particle.position.x = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomX;
+                    particle.position.y = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomY * Math.random();
+                    particle.position.z = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomZ;
+                } else {
+                    particle.position.x = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomX;
+                    particle.position.y = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomY;
+                    particle.position.z = THREE.MathUtils.randFloat(minDistance, maxDistance) * randomZ * Math.random();
+                }
+
+                scene.add(particle);
+            }
+        }
+
+        function sceneGroup(group, objs) {
+            group = localGroup = new THREE.Group();
+
+            objs.forEach(function(obj) {
+                group.add(obj);
+            });
+
+            scene.add(group);
+        }
+
+        function sin(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.sin((Math.PI / 2) * (x * speed)) * radius) + center;
+        }
+
+        function cos(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.cos((Math.PI / 2) * (x * speed)) * radius) + center;
+        }
+
+        function orbitAround2D(obj, ax = 'y', speed = 0.01, radius, center) {
+            radius  = (radius === undefined) ? new THREE.Vector3(2, 2, 2) : radius; // Orbit radius
+            center  = (center === undefined) ? new THREE.Vector3(0, 0, 0) : center; // Orbit center
+
+            // Orbit around x
+            if (ax.includes('x')) {
+                obj.position.x = center.x;
+                obj.position.y = cos(framesCount, speed, radius.y, center.y);
+                obj.position.z = sin(framesCount, speed, radius.z, center.z);
+                obj.rotation.x = framesCount * speed * (Math.PI / 2);
+            }
+
+            // Orbit around y
+            if (ax.includes('y')) {
+                obj.position.y = center.y;
+                obj.position.z = cos(framesCount, speed, radius.z, center.z);
+                obj.position.x = sin(framesCount, speed, radius.x, center.x);
+                obj.rotation.y = framesCount * speed * (Math.PI / 2);
+            }
+
+            // Orbit around z
+            if (ax.includes('z')) {
+                obj.position.z = center.z;
+                obj.position.x = cos(framesCount, speed, radius.x, center.x);
+                obj.position.y = sin(framesCount, speed, radius.y, center.y);
+                obj.rotation.z = framesCount * speed * (Math.PI / 2);
+            }
+        }
+
+
+        // Helpers
+        function helperGrid() {
+            var grid = new THREE.GridHelper(0, 0);
+            scene.add(grid);
+        }
+
+        function helperWireframe(obj, geometry) {
+            var wireframeGeometry   = new THREE.WireframeGeometry(geometry);
+            wireframe               = new THREE.LineSegments(wireframeGeometry);
+
+            wireframe.material.depthTest = false;
+            wireframe.material.opacity = 0.5;
+            wireframe.material.transparent = true;
+
+            // Apply all properties from obj to wireframe
+            wireframe.scale.x = obj.scale.x;
+            wireframe.scale.y = obj.scale.y;
+            wireframe.scale.z = obj.scale.z;
+            wireframe.position.x = obj.position.x;
+            wireframe.position.y = obj.position.y;
+            wireframe.position.z = obj.position.z;
+            wireframe.rotation.x = obj.rotation.x;
+            wireframe.rotation.y = obj.rotation.y;
+            wireframe.rotation.z = obj.rotation.z;
+
+            scene.add(wireframe);
+        }
+
+        function helperLight(light = directionalLight, size = 1, color = '#ffffff') {
+            if (light.type === 'DirectionalLight') {
+                lightHelper = new THREE.DirectionalLightHelper(light, size, color);
+            }
+
+            if (light.type === 'PointLight') {
+                lightHelper = new THREE.PointLightHelper(light, size, color);
+            }
+
+            if (light.type === 'SpotLight') {
+                lightHelper = new THREE.SpotLightHelper(light, size, color);
+            }
+
+            if (light.type === 'HemisphereLight') {
+                lightHelper = new THREE.HemisphereLightHelper(light, size, color);
+            }
+
+            scene.add(lightHelper);
+        }
+
+
+        // Camera
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function lightCameraSync(light = cameraLight) {
+            light.position.x = camera.position.x;
+            light.position.y = camera.position.y;
+            light.position.z = camera.position.z;
+            light.rotation.x = camera.rotation.x;
+            light.rotation.y = camera.rotation.y;
+            light.rotation.z = camera.rotation.z;
+        }
+
+    </script>
+
+</body>
+</html>
