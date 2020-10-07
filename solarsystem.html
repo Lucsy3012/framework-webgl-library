@@ -629,16 +629,21 @@
         let particlesGroup = new THREE.Group(),
             solarsystemGroup = new THREE.Group();
         let particles = [],
-            particle, geometry, material;
+            particle, geometry, material, particleMap, spriteMaterial;
 
         // Math variables
         const pi2 = Math.PI * 2; // full rotation
         const deg = Math.PI / 180; // one degree
         const sin1 = Math.PI / 2; // one sin
+        const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
         // Math functions
         function easeInOut(x) {
             return Math.pow(Math.sin(x * Math.PI / 2), 2);
+        }
+
+        function equalDistribution(min, length, i) {
+            return ((min / (length / 2)) * (i + 1)) - (min + (1 / (length)));
         }
 
         // Story variables
@@ -696,9 +701,6 @@
                     "tilt": 7.25,
                     "color": "#ffbc76",
                     "map": "sun.jpg"
-                },
-                "atmosphere": {
-                    "elevation": 1.1
                 }
             },
             "mercury": {
@@ -894,7 +896,7 @@
             // INIT Camera
             // --------------------------------------
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 100000);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 1000000);
             camera.position.set(0, 1000, 2000);
             // camera.lookAt(0, 0, 0);
 
@@ -934,10 +936,11 @@
             // Create celestial bodies
             sceneCelestialBodies();
 
+            // Create glow around sun
+            sceneSunshine(solarsystem['sun']);
+
             // Create particles
             sceneParticlesRandom();
-
-            console.log(gBodies);
 
             // Create group
             sceneGroup(particlesGroup, particles);
@@ -998,7 +1001,7 @@
             /* Stars Animation
              * ------------------------------ */
             for (let i = 0; i < particles.length; ++i) {
-                particles[i].material.opacity = (Math.sin((i + framesCount) * 0.01)) + 1.25;
+                particles[i].material.opacity = (Math.sin((i + framesCount) * 0.02)) + 1.35;
             }
 
             // Stars Group Animation
@@ -1073,7 +1076,7 @@
             controls.screenSpacePanning = true;
             controls.panSpeed = 0.5;
             controls.minDistance = 0;
-            controls.maxDistance = 150000;
+            controls.maxDistance = 450000;
             controls.target.set(0, 0, 0);
             controls.update();
         }
@@ -1200,24 +1203,55 @@
             }
         }
 
-        function sceneParticlesRandom(size = 16, length = 10000, minDistance = 100000, maxDistance = 200000) {
+        function sceneSunshine(obj) {
+            var sunshineMap       = new THREE.TextureLoader().load("img/sunshine_sprite.svg");
+            var sunshineMaterial  = new THREE.SpriteMaterial({ map: sunshineMap });
+            var sunshine          = new THREE.Sprite(sunshineMaterial);
+            sunshine.scale.x = obj.body.radius / 333;
+            sunshine.scale.y = obj.body.radius / 333;
+            sunshine.scale.z = obj.body.radius / 333;
+            sunshine.material.opacity = 0.66;
+            scene.add(sunshine);
+        }
+
+        function sceneParticlesRandom(isSprite = true, size = 24, length = 3500, minDistance = 50000, maxDistance = 300000) {
 
             // Init
-            geometry = new THREE.SphereBufferGeometry(size, 8, 8);
+            geometry    = new THREE.SphereBufferGeometry(size, 8, 8);
+            particleMap = new THREE.TextureLoader().load("img/star_sprite.svg");
 
             let i = 0;
 
             for (i; i < length; ++i) {
 
-                // Init
-                material = new THREE.MeshBasicMaterial( { color: "hsl(0, 100%, 100%)" } );
-                particle = particles[i] = new THREE.Mesh(geometry, material);
-                particle.material.transparent = true;
+                // Is sprite (better performance)
+                if (isSprite === true) {
+                    spriteMaterial = new THREE.SpriteMaterial({ map: particleMap });
+                    particle = particles[i] = new THREE.Sprite(spriteMaterial);
+                    particle.scale.set(85, 85, 85);
 
-                // With three.js math utilities
-                particle.position.x = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2);
-                particle.position.y = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2);
+                // Is 3d stars
+                } else {
+                    material = new THREE.MeshBasicMaterial({ color: "hsl(0, 100%, 100%)" });
+                    particle = particles[i] = new THREE.Mesh(geometry, material);
+                    particle.material.transparent = true;
+                }
+
+                // Distribute with space in the middle
+                let theta = goldenAngle * i;
+
+                particle.position.x = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2) * Math.sin(theta);
+                particle.position.y = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2) * Math.cos(theta);
                 particle.position.z = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2);
+
+                // At least one coordinate needs min distance
+                if (Math.random() < 0.33) {
+                    particle.position.x = (particle.position.x < 0) ? particle.position.x - minDistance : particle.position.x + minDistance;
+                } else if (Math.random() < 0.66) {
+                    particle.position.y = (particle.position.y < 0) ? particle.position.y - minDistance : particle.position.y + minDistance;
+                } else {
+                    particle.position.z = (particle.position.z < 0) ? particle.position.z - minDistance : particle.position.z + minDistance;
+                }
 
                 scene.add(particle);
             }
@@ -1267,9 +1301,6 @@
 
         // Raycasting (find intersecting elements)
         function mouseVectoring(e) {
-            // calculate mouse position in normalized device coordinates
-            // (-1 to +1) for both components
-
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
         }
@@ -1389,6 +1420,7 @@
 
         $(document).ready(function() {
 
+            // Add .loaded for loading screen
             $('body').addClass('loaded');
 
             // Simulation
