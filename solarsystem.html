@@ -348,7 +348,7 @@
          ----------------------------------- */
 
         #canvas-container {
-            transform: translateY(50%);
+            transform: translateY(-25%);
         }
 
         #loader {
@@ -384,7 +384,7 @@
         }
 
         body.loaded #loader {
-            opacity: 0;
+            height: 0;
             pointer-events: none;
         }
 
@@ -640,10 +640,6 @@
         // Math functions
         function easeInOut(x) {
             return Math.pow(Math.sin(x * Math.PI / 2), 2);
-        }
-
-        function equalDistribution(min, length, i) {
-            return ((min / (length / 2)) * (i + 1)) - (min + (1 / (length)));
         }
 
         // Story variables
@@ -1095,7 +1091,7 @@
                 // Current body
                 const key = Object.keys(s)[i];
                 const o   = s[key];
-                const distance = o.body.distance * AE * km / 100;
+                const distance = o.body.distance * AE * km / 50;
                 const imageFolder = (simulationMode === true) ? 'img/highres/' : 'img/';
 
                 /* Create body
@@ -1214,7 +1210,7 @@
             scene.add(sunshine);
         }
 
-        function sceneParticlesRandom(isSprite = true, size = 24, length = 3500, minDistance = 50000, maxDistance = 300000) {
+        function sceneParticlesRandom(isSprite = true, size = 24, length = 3200, minDistance = 50000, maxDistance = 280000) {
 
             // Init
             geometry    = new THREE.SphereBufferGeometry(size, 8, 8);
@@ -1285,7 +1281,7 @@
                 scene.add(ambientLight);
             }
 
-            pointLight = new THREE.PointLight(0xffffff, 0.5, 100000, 0.5);
+            pointLight = new THREE.PointLight(0xffffff, 0.66, 100000, 0.5);
             pointLight.position.set(0, 0, 0);
             pointLight.castShadow = true;
             pointLight.shadow.mapSize.width = 2048;
@@ -1420,8 +1416,14 @@
 
         $(document).ready(function() {
 
-            // Add .loaded for loading screen
-            $('body').addClass('loaded');
+            // Preload earth image (fairly large)
+            let image1 = new Image();
+            image1.src = 'img/highres/earth.jpg';
+            image1.onload = function() {
+
+                // Add .loaded for loading screen
+                $('body').addClass('loaded');
+            }
 
             // Simulation
             document.addEventListener('updateDate', updateDate, false);
