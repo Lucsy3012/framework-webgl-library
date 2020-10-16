@@ -6,10 +6,9 @@
     <title>Solarsystem</title>
 
     <style>
+        * { user-select: none; }
         body { margin: 0; background-color: #000; font-family: 'Inter', sans-serif; }
         canvas { display: block; }
-        canvas:focus { outline: none; }
-        canvas:active { cursor: none; }
         .story--holder {
             position: relative;
             display: flex;
@@ -20,47 +19,6 @@
             height: 100vh;
             overflow: hidden;
         }
-        /*
-        .section--inner {
-            position: relative;
-            width: 100%;
-            max-width: 1180px;
-            margin: 0 auto;
-            padding: 0 130px;
-            z-index: 2;
-        }
-        .story {
-            pointer-events: none;
-            opacity: 0;
-            transform: translateY(60px);
-            transition: opacity .75s cubic-bezier(0.69, 0.01, 0.27, 0.9), transform 1s cubic-bezier(0.69, 0.01, 0.27, 0.9);
-        }
-        .story ~ .story {
-            position: absolute;
-            top: 0;
-            left: 130px;
-        }
-        .story.story--active {
-            pointer-events: initial;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .story h2 {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            font-size: clamp(48px, 10vw, 56px);
-            font-weight: 400;
-            letter-spacing: -0.02em;
-            color: #ffffff;
-        }
-        .story p {
-            margin: 10px 0 0;
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            font-weight: 200;
-            color: #ffffffaa;
-        }
-        */
         #canvas-container {
             display: flex;
             flex-wrap: wrap;
@@ -76,6 +34,34 @@
             z-index: 1;
             transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
             transition-delay: 0.25s;
+        }
+
+        .hide-ui {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 7vmin;
+            height: 7vmin;
+            z-index: 1;
+        }
+
+        .ui-holder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
+            pointer-events: none;
+        }
+
+        .ui-holder > * {
+            pointer-events: initial;
+        }
+
+        .ui-holder.hidden {
+            opacity: 0;
+            transform: scale(1.4);
         }
 
         /* Controller
@@ -358,10 +344,15 @@
             display: flex;
             flex-wrap: wrap;
             align-items: center;
+            animation: controller 2s both ease;
+            animation-delay: .5s;
+            animation-direction: normal;
+            animation-iteration-count: 1;
         }
 
         .audio-player .title--holder {
-            max-width: 33vw;
+            max-width: 15vw;
+            width: 240px;
             margin: 0 30px 0 0;
             text-align: left;
             outline: none;
@@ -372,6 +363,7 @@
         }
 
         .audio-player .title--holder > .title {
+            width: min-content;
             padding: 0 10px;
             font-family: 'Inter', sans-serif;
             font-size: 16px;
@@ -387,7 +379,8 @@
             animation-fill-mode: both;
             animation-play-state: paused;
             animation-delay: 0s;
-            animation-duration: 11s;
+            animation-duration: 20s;
+            animation-direction: reverse;
             animation-name: movingTitle;
         }
 
@@ -499,6 +492,7 @@
             bottom: 0;
             height: 100vh;
             background: linear-gradient(220deg, rgb(11 11 14) 0%, rgb(2 4 14) 100%);
+            /* background: linear-gradient(220deg, rgb(11 11 14) 0%, rgb(2 4 14) 100%); */
             background-color: #131315;
             transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
             transition-delay: 0.25s;
@@ -506,15 +500,28 @@
             z-index: 100;
         }
 
+        #loader .container {
+            text-align: center;
+            user-select: none;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+            transition: all 1.5s cubic-bezier(0.67, 0.04, 0.18, 0.96);
+        }
+
         #loader .loading-text {
-            font-size: 1.5vmax;
-            font-weight: 600;
-            letter-spacing: 0.2em;
+            font-size: 3.5vmin;
+            font-weight: 400;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
             text-shadow: 0 0 4px #ffffff66;
             color: #fff;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
-            transition: all 1.5s cubic-bezier(0.67, 0.04, 0.18, 0.96);
+        }
+
+        #loader .loading-text-instructions {
+            color: #ffffff52;
+            font-size: 16px;
+            font-weight: 300;
+            margin-top: 24px;
+            line-height: 2;
         }
 
         body.loaded #canvas-container {
@@ -526,21 +533,74 @@
             pointer-events: none;
         }
 
-        body.loaded #loader .loading-text {
+        body.loaded #loader .container {
             margin-top: 5vmax;
             transform: translateY(100%);
             clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+        }
+
+
+        /* Cursor
+         ----------------------------------- */
+
+        #canvas-container * {
+            cursor: none;
+        }
+
+        #cursor {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            padding: 5px;
+            border-radius: 40px;
+            border: 1px solid #fff2;
+            opacity: 0;
+            transform: translate(-50%, -50%);
+            transition: opacity 1s ease-in-out, padding .2s ease-in-out, border .2s ease-in-out;
+            pointer-events: none;
+        }
+
+        #cursor::before {
+            position: absolute;
+            content: "";
+            width: 2px;
+            height: 2px;
+            border-radius: 2px;
+            background-color: #fff7;
+            transition: background .2s ease-in-out;
+        }
+
+        #canvas-container:active #cursor {
+            padding: 10px;
+            border-color: transparent;
+        }
+
+        #canvas-container:active #cursor::before {
+            background: transparent;
         }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loading-text">Loading assets</div>
+        <div class="container">
+            <div class="loading-text">Loading assets</div>
+            <div class="loading-text-instructions">
+                Use the mouse to navigate -
+                <br/>Hide the user interface in the top right corner
+            </div>
+        </div>
     </div>
 
     <div class="story--holder" id="universe">
         <div id="canvas-container">
+            <div id="cursor"></div>
+            <div class="hide-ui"></div>
             <div class="body-information">
 
                 <!-- Sun -->
@@ -557,7 +617,7 @@
                 <article id="mercury-information">
                     <div class="title">Mercury ☿</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>4,880 km</dd>
+                        <dt>Diameter</dt><dd>4,880 km</dd>
                         <dt>Rotation tilt</dt><dd>0.034°</dd>
                         <dt>Rotation speed</dt><dd>58 days 15 hours</dd>
                     </dl>
@@ -573,7 +633,7 @@
                 <article id="venus-information">
                     <div class="title">Venus ♀</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>6,501.65 km</dd>
+                        <dt>Diameter</dt><dd>12,103.6 km</dd>
                         <dt>Rotation tilt</dt><dd>177.36°</dd>
                         <dt>Rotation speed</dt><dd>243 days 36 minutes</dd>
                     </dl>
@@ -589,7 +649,7 @@
                 <article id="earth-information">
                     <div class="title">Earth 🜨</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>6,378.135 km</dd>
+                        <dt>Diameter</dt><dd>12,756.27 km</dd>
                         <dt>Rotation tilt</dt><dd>23.44°</dd>
                         <dt>Rotation speed</dt><dd>23 hours 56 minutes</dd>
                     </dl>
@@ -605,7 +665,7 @@
                 <article id="mars-information">
                     <div class="title">Mars ♂</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>3,396.2 km</dd>
+                        <dt>Diameter</dt><dd>6,792.4 km</dd>
                         <dt>Rotation tilt</dt><dd>25.19°</dd>
                         <dt>Rotation speed</dt><dd>24 hours 37 minutes</dd>
                     </dl>
@@ -621,7 +681,7 @@
                 <article id="jupiter-information">
                     <div class="title">Jupiter ♃</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>71,492 km</dd>
+                        <dt>Diameter</dt><dd>142,984 km</dd>
                         <dt>Rotation tilt</dt><dd>3.13°</dd>
                         <dt>Rotation speed</dt><dd>9 hours 55 minutes</dd>
                     </dl>
@@ -637,7 +697,7 @@
                 <article id="saturn-information">
                     <div class="title">Saturn ♄</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>60,268 km</dd>
+                        <dt>Diameter</dt><dd>120,536 km</dd>
                         <dt>Rotation tilt</dt><dd>26.73°</dd>
                         <dt>Rotation speed</dt><dd>10 hours 33 minutes</dd>
                     </dl>
@@ -653,7 +713,7 @@
                 <article id="uranus-information">
                     <div class="title">Uranus ⛢</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>25,559 km</dd>
+                        <dt>Diameter</dt><dd>51,118 km</dd>
                         <dt>Rotation tilt</dt><dd>97.77°</dd>
                         <dt>Rotation speed</dt><dd>17 hours 14 minutes</dd>
                     </dl>
@@ -669,7 +729,7 @@
                 <article id="neptune-information">
                     <div class="title">Neptune ♆</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>24,764 km</dd>
+                        <dt>Diameter</dt><dd>49,528 km</dd>
                         <dt>Rotation tilt</dt><dd>28.32°</dd>
                         <dt>Rotation speed</dt><dd>15 hours 58 minutes</dd>
                     </dl>
@@ -685,7 +745,7 @@
                 <article id="pluto-information">
                     <div class="title">Pluto ♇</div>
                     <dl class="information">
-                        <dt>Radius</dt><dd>1,187 km</dd>
+                        <dt>Diameter</dt><dd>2,374 km</dd>
                         <dt>Rotation tilt</dt><dd>122.53°</dd>
                         <dt>Rotation speed</dt><dd>6 days 9 hours 43 minutes</dd>
                     </dl>
@@ -698,67 +758,72 @@
                 </article>
             </div>
 
-            <div class="controller days-passed">
-                <div class="value" id="days">0</div>
-                <div class="title">Days passed</div>
-            </div>
-            <div class="controller simulation-speed">
-                <form>
-                    <input class="value" id="simulation-speed" type="number" value="0.02" />
-                </form>
-                <div class="title">Simulation speed</div>
-            </div>
+            <!-- UI -->
+            <div class="ui-holder">
 
-            <!-- Navigator left -->
-            <div class="navigator">
-                <nav id="navigate-to">
-                    <ul>
-                        <li class="sun" data-body="sun"></li>
-                        <li class="mercury" data-body="mercury"></li>
-                        <li class="venus" data-body="venus"></li>
-                        <li class="earth" data-body="earth"></li>
-                        <li class="mars" data-body="mars"></li>
-                        <li class="jupiter" data-body="jupiter"></li>
-                        <li class="saturn" data-body="saturn"></li>
-                        <li class="uranus" data-body="uranus"></li>
-                        <li class="neptune" data-body="neptune"></li>
-                        <li class="pluto" data-body="pluto"></li>
-                    </ul>
-                </nav>
-                <div class="legend">Attach to</div>
-            </div>
-
-            <!-- Navigator right -->
-            <div class="navigator right">
-                <nav id="look-at">
-                    <ul>
-                        <li class="sun active" data-body="sun"></li>
-                        <li class="mercury" data-body="mercury"></li>
-                        <li class="venus" data-body="venus"></li>
-                        <li class="earth" data-body="earth"></li>
-                        <li class="mars" data-body="mars"></li>
-                        <li class="jupiter" data-body="jupiter"></li>
-                        <li class="saturn" data-body="saturn"></li>
-                        <li class="uranus" data-body="uranus"></li>
-                        <li class="neptune" data-body="neptune"></li>
-                        <li class="pluto" data-body="pluto"></li>
-                    </ul>
-                </nav>
-                <div class="legend">Look at</div>
-            </div>
-
-            <!-- Audioplayer -->
-            <div class="audio-player">
-                <div class="title--holder">
-                    <div class="title">Uncharted Worlds</div>
+                <!-- Controller -->
+                <div class="controller days-passed">
+                    <div class="value" id="days">0</div>
+                    <div class="title">Days passed</div>
                 </div>
-                <div class="play-pause">
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
+                <div class="controller simulation-speed">
+                    <form>
+                        <input class="value" id="simulation-speed" type="number" value="0.02" />
+                    </form>
+                    <div class="title">Simulation speed</div>
                 </div>
-                <div class="shuffle" id="shuffle">
-                    <img src="img/shuffle.svg" alt="Shuffle" />
+
+                <!-- Navigator left -->
+                <div class="navigator">
+                    <nav id="navigate-to">
+                        <ul>
+                            <li class="sun" data-body="sun"></li>
+                            <li class="mercury" data-body="mercury"></li>
+                            <li class="venus" data-body="venus"></li>
+                            <li class="earth" data-body="earth"></li>
+                            <li class="mars" data-body="mars"></li>
+                            <li class="jupiter" data-body="jupiter"></li>
+                            <li class="saturn" data-body="saturn"></li>
+                            <li class="uranus" data-body="uranus"></li>
+                            <li class="neptune" data-body="neptune"></li>
+                            <li class="pluto" data-body="pluto"></li>
+                        </ul>
+                    </nav>
+                    <div class="legend">Attach to</div>
+                </div>
+
+                <!-- Navigator right -->
+                <div class="navigator right">
+                    <nav id="look-at">
+                        <ul>
+                            <li class="sun active" data-body="sun"></li>
+                            <li class="mercury" data-body="mercury"></li>
+                            <li class="venus" data-body="venus"></li>
+                            <li class="earth" data-body="earth"></li>
+                            <li class="mars" data-body="mars"></li>
+                            <li class="jupiter" data-body="jupiter"></li>
+                            <li class="saturn" data-body="saturn"></li>
+                            <li class="uranus" data-body="uranus"></li>
+                            <li class="neptune" data-body="neptune"></li>
+                            <li class="pluto" data-body="pluto"></li>
+                        </ul>
+                    </nav>
+                    <div class="legend">Look at</div>
+                </div>
+
+                <!-- Audioplayer -->
+                <div class="audio-player">
+                    <div class="title--holder">
+                        <div class="title">Uncharted Worlds</div>
+                    </div>
+                    <div class="play-pause" title="Play / pause music">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <div class="shuffle" id="shuffle" title="Shuffle to another song">
+                        <img src="img/shuffle.svg" alt="Shuffle" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -779,8 +844,6 @@
 
         var ambientLight, pointLight;
 
-        let particlesGroup = new THREE.Group(),
-            solarsystemGroup = new THREE.Group();
         let particles = [],
             particle, geometry, material, particleMap, spriteMaterial;
 
@@ -796,8 +859,6 @@
         }
 
         // Story variables
-        // const storyUpEvent = new Event('storyUp');
-        // const storyDownEvent = new Event('storyDown');
         let snapshotFrame;
         let snapshotCameraPosition = new THREE.Vector3();
         let snapshotCameraRotation = new THREE.Vector3();
@@ -818,24 +879,26 @@
          *
         */
 
-        // Bodies
+        // Objects
         let body, bodyGeometry, bodyMaterial, bodies = [], gBodies = [];
         let atmosphere, atmosphereGeometry, atmosphereMaterial, atmospheres = [];
         let rings, ringsGeometry, ringsMaterial;
         let orbit, orbitGeometry, orbitMaterial, orbits = [];
 
         // Simulation
-        let milliseconds = 0;
-        let daysInSimulationPast = 0;
-        const updateDateEvent = new Event('updateDate');
-        let simulationSpeed = window.simulationSpeed = 0.02;
+        let simulationMode          = true;
+        let milliseconds            = 0;
+        let daysInSimulationPast    = 0;
+        let simulationSpeed         = window.simulationSpeed = 0.02;
+        const updateDateEvent       = new Event('updateDate');
 
         // Variables
-        const AE = 149597870;
-        const km = 1 / 1000;
-        const year = 365;
-        const day = 1 / year;
-        const fps = 60;
+        const AE    = 149597870;
+        const km    = 1 / 1000;
+        const year  = 365;
+        const day   = 1 / year;
+        const fps   = 60;
+        const scale = 50;
         const solarsystem = {
             "sun": {
                 "orbital": {
@@ -1019,16 +1082,6 @@
             }
         };
 
-        // Assign story variables
-        // window.story = storyStep;
-        // window.storyFrames = storyFrames;
-
-        // Browser Parameters
-        // const queryString = window.location.search;
-        // const urlParams = new URLSearchParams(queryString);
-        // simulationMode = urlParams.get('lights');
-        let simulationMode = true;
-
         init();
         sceneAnimation();
 
@@ -1044,8 +1097,7 @@
             // --------------------------------------
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 1000000);
-            camera.position.set(0, 1000, 2000);
-            // camera.lookAt(0, 0, 0);
+            camera.position.set(-2000, 1000, -1000);
 
             // INIT Renderer
             // --------------------------------------
@@ -1053,7 +1105,6 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -1087,15 +1138,13 @@
             sceneSunshine(solarsystem['sun']);
 
             // Create particles
-            sceneParticlesRandom();
-
-            // Create group
-            sceneGroup(particlesGroup, particles);
+            sceneStars();
 
             // Update renderer and camera when resizing
             window.addEventListener('resize', onWindowResize, false);
             window.addEventListener('mousemove', mouseVectoring, false);
             window.addEventListener('click', function() { intersectClick(bodies); }, false);
+            // window.addEventListener('dblclick', function() { intersectDblClick(bodies); }, false);
 
             // Grid
             // helperGrid();
@@ -1107,20 +1156,31 @@
             window.simulationNavigate = '';
             window.simulationLookAt = 'sun';
 
+            // Attach Trigger
             document.addEventListener('navigatorAttach', function() {
                 attached = false;
                 storyTriggerRewrites();
             }, false);
 
+            // Detach Trigger
             document.addEventListener('navigatorDetachEvent', function() {
                 storyTransition = false;
                 attached = false;
             }, false);
 
+            // Look At Trigger
             document.addEventListener('navigatorLookAt', function() {
                 locked = false;
                 storyTriggerRewrites();
             }, false);
+
+            // Rendered Trigger
+            document.addEventListener('renderedObjects', function() {
+                for (let i = 0; i < orbits.length; ++i) {
+                    console.log(orbits[i]);
+                    orbits[i].rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize initial placement
+                }
+            });
 
         }
 
@@ -1130,8 +1190,8 @@
             requestAnimationFrame(sceneAnimation);
             scene.updateMatrixWorld();
 
-            framesCount++;
-            milliseconds++;
+            // Counting
+            framesCount++; milliseconds++;
 
             // if one second (times the simulation speed) has passed
             if ((milliseconds * window.simulationSpeed) / fps >= 1) {
@@ -1150,10 +1210,6 @@
             for (let i = 0; i < particles.length; ++i) {
                 particles[i].material.opacity = (Math.sin((i + framesCount) * 0.02)) + 1.35;
             }
-
-            // Stars Group Animation
-            // particlesGroup.rotation.x += 0.0000055 * window.simulationSpeed;
-            // particlesGroup.rotation.y += 0.0000050 * window.simulationSpeed;
 
 
             /* Single Orbit Animation
@@ -1203,7 +1259,8 @@
                 }
             }
 
-            // Story Animation
+            /* Story Animations
+             * ------------------------------ */
             if (storyTransition === true) {
                 bodies.forEach(function(body) {
                     if (body.name === window.simulationNavigate) {
@@ -1230,9 +1287,9 @@
 
         function sceneCelestialBodies() {
             const s = solarsystem;
-            const bodiesCount = Object.keys(s).length;
+            const sCount = Object.keys(s).length;
 
-            for (let i = 0; i < bodiesCount; i++) {
+            for (let i = 0; i < sCount; i++) {
 
                 /* Create groups
                  * ------------------------------ */
@@ -1242,8 +1299,10 @@
                 // Current body
                 const key = Object.keys(s)[i];
                 const o   = s[key];
-                const distance = o.body.distance * AE * km / 50;
+                const distance = o.body.distance * AE * km / scale;
                 const imageFolder = (simulationMode === true) ? 'img/highres/' : 'img/';
+
+
 
                 /* Create body
                  * ------------------------------ */
@@ -1262,6 +1321,7 @@
                 // Add to local group
                 body.name = key;
                 gBody.add(body);
+
 
 
                 /* Create atmosphere
@@ -1301,6 +1361,7 @@
                 }
 
 
+
                 /* Create rings
                  * ------------------------------ */
                 if (o.rings) {
@@ -1316,6 +1377,8 @@
                     gBody.add(rings);
                 }
 
+
+
                 /* Create orbit
                  * ------------------------------ */
                 if (o.orbital && simulationMode !== true) {
@@ -1324,23 +1387,24 @@
                     orbit           = new THREE.Mesh(orbitGeometry, orbitMaterial);
 
                     orbit.rotation.x = 90 * deg;
-
-                    // Randomize initial placement
-                    orbit.rotation.z = THREE.MathUtils.randFloatSpread(180) * deg;
                 }
+
+
 
                 /* Refine body group
                  * ------------------------------ */
                 gBody.name = key + '-group';
                 gBody.position.x = distance; // distance from center
                 gBody.rotation.x = o.body.tilt * deg; // tilt towards center
-                gBody.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize
+                gBody.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize inital rotation
                 gBodies[i] = gBody;
+
+
 
                 /* Define orbit group
                  * ------------------------------ */
                 gOrbit.name = key + '-orbit';
-                gOrbit.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize initial placement
+                // gOrbit.rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize initial placement
                 gOrbit.add(orbit);
                 gOrbit.add(gBody);
                 orbits[i] = gOrbit;
@@ -1361,7 +1425,7 @@
             scene.add(sunshine);
         }
 
-        function sceneParticlesRandom(isSprite = true, size = 24, length = 3200, minDistance = 50000, maxDistance = 280000) {
+        function sceneStars(isSprite = true, size = 24, length = 3200, minDistance = 80000, maxDistance = 320000) {
 
             // Init
             geometry    = new THREE.SphereBufferGeometry(size, 8, 8);
@@ -1384,14 +1448,14 @@
                     particle.material.transparent = true;
                 }
 
-                // Distribute with space in the middle
+                // Distribute randomly with space in the middle
                 let theta = goldenAngle * i;
 
                 particle.position.x = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2) * Math.sin(theta);
                 particle.position.y = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2) * Math.cos(theta);
                 particle.position.z = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2);
 
-                // At least one coordinate needs min distance
+                // At least one coordinate needs min-distance
                 if (Math.random() < 0.33) {
                     particle.position.x = (particle.position.x < 0) ? particle.position.x - minDistance : particle.position.x + minDistance;
                 } else if (Math.random() < 0.66) {
@@ -1402,16 +1466,6 @@
 
                 scene.add(particle);
             }
-        }
-
-        function sceneGroup(group, objs) {
-            group = particlesGroup = new THREE.Group();
-
-            objs.forEach(function(obj) {
-                group.add(obj);
-            });
-
-            scene.add(group);
         }
 
 
@@ -1432,7 +1486,7 @@
                 scene.add(ambientLight);
             }
 
-            pointLight = new THREE.PointLight(0xffffff, 0.66, 100000, 0.5);
+            pointLight = new THREE.PointLight(0xffffff, 0.66, 200000, 0.5);
             pointLight.position.set(0, 0, 0);
             pointLight.castShadow = true;
             pointLight.shadow.mapSize.width = 2048;
@@ -1446,7 +1500,9 @@
             scene.add(grid);
         }
 
+        
         // Raycasting (find intersecting elements)
+        // -----------------------------------
         function mouseVectoring(e) {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
@@ -1454,7 +1510,6 @@
 
         function rayCastingObjs(objs) {
             raycaster.setFromCamera(mouse, camera);
-
             return raycaster.intersectObjects(objs);
         }
 
@@ -1466,6 +1521,16 @@
                 document.dispatchEvent(clickBodyEvent);
             }
         }
+
+        /* not functional
+        function intersectDblClick(objs) {
+            var intersects = rayCastingObjs(objs);
+
+            if (intersects.length > 0) {
+                storyAnimateCameraRotation(intersects[0].object, framesCount, snapshotFrame, snapshotCameraRotation, 100);
+            }
+        }
+        */
 
 
 
@@ -1487,7 +1552,8 @@
 
         function storyAnimateCameraPosition(target, framesCount, snapshotFrame, snapshotCameraPosition, countTo) {
             let current = camera.position;
-            let t = target.getWorldPosition();
+            let v = new THREE.Vector3();
+            let t = target.getWorldPosition(v);
             let s = snapshotCameraPosition;
             let r = target.geometry.parameters.radius;
 
@@ -1527,7 +1593,8 @@
 
         function storyAnimateCameraRotation(target, framesCount, snapshotFrame, snapshotCameraRotation, countTo) {
             let current = camera.rotation;
-            let t = target.getWorldPosition();
+            let v = new THREE.Vector3();
+            let t = target.getWorldPosition(v);
             let s = snapshotCameraRotation;
 
             // Approach 0 to 1 with ease-in-out function in y frames
@@ -1706,12 +1773,15 @@
             // Preload earth image (fairly large)
             // ----------------------------------
 
+            const renderedObjectsEvent = new Event('renderedObjects');
             let image1 = new Image();
             image1.src = 'img/highres/earth.jpg';
             image1.onload = function() {
 
-                // Add .loaded for loading screen
+                // Reveal canvas
+                console.log('Get ready to explore our solarsystem!');
                 $('body').addClass('loaded');
+                document.dispatchEvent(renderedObjectsEvent);
             }
 
 
@@ -1731,6 +1801,30 @@
             $simulationSpeed.on('change keydown', function() {
                 window.simulationSpeed = $(this).val();
             });
+
+
+
+            // UI
+            // ----------------------------------
+            const $hideUI   = $('.hide-ui');
+            const $uiHolder = $('.ui-holder');
+
+            $hideUI.on('mouseenter', function() {
+                $uiHolder.toggleClass('hidden');
+            });
+
+
+            const $cursor   = $('#cursor');
+
+            $(window).on('mousemove', function(e) {
+                placeCursor(e);
+            });
+
+            function placeCursor(e) {
+                $cursor.css('top', e.pageY);
+                $cursor.css('left', e.pageX);
+                $cursor.css('opacity', 1);
+            }
 
 
 
