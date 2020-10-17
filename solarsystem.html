@@ -1178,7 +1178,6 @@
             // Rendered Trigger
             document.addEventListener('renderedObjects', function() {
                 for (let i = 0; i < orbits.length; ++i) {
-                    console.log(orbits[i]);
                     orbits[i].rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize initial placement
                 }
             });
