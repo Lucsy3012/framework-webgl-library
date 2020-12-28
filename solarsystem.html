@@ -2,8 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="shortcut icon" href="img/favicon.ico">
-    <title>Solarsystem</title>
+    <title>Solarsystem Simulation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Lucas Dietrich">
+    <meta name="robots" content="index,follow">
+
+    <meta property="og:title" content="Solarsystem Simulation | Explore our solarsystem virtually"/>
+    <meta property="og:description" content="Space has always been a mystery to mankind. Its indescribable vastness and beauty are pleading for exploration."/>
+    <meta property="og:image" content="https://lucasdietrich.de/wp-content/uploads/2020/10/web-projects-solarsystem.jpg" />
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="http://webgl.lucasdietrich.de/solarsystem.html"/>
+    <meta property="og:site_name" content="Solarsystem Simulation | Explore our solarsystem virtually"/>
+
+    <link rel="shortcut icon" href="img/favicons/solarsystem/favicon.ico">
+    <link rel="icon" sizes="16x16 32x32 64x64" href="img/favicons/solarsystem/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicons/solarsystem/favicon-16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicons/solarsystem/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="img/favicons/solarsystem/favicon-64.png">
 
     <style>
         * { user-select: none; }
@@ -1714,20 +1729,28 @@
             ];
 
             // Shuffle
-            generateAudio();
+            generateAudio(false);
 
             $('#shuffle').on('click', function() {
-                generateAudio();
+                generateAudio(true);
                 playAudio();
             });
 
-            function generateAudio() {
+            function generateAudio(autoplay) {
                 let randomSong = songs[Math.floor(Math.random() * songs.length)];
                 let name = randomSong.name;
                 let file = randomSong.file;
-                const audioElement = '<audio controls autoplay loop id="audio">' +
-                                        '<source src="' + file + '" type="audio/mpeg">' +
-                                     '</audio>';
+                let audioElement;
+
+                if (autoplay) {
+                    audioElement = '<audio controls autoplay loop id="audio">' +
+                        '<source src="' + file + '" type="audio/mpeg">' +
+                        '</audio>';
+                } else {
+                    audioElement = '<audio controls loop id="audio">' +
+                        '<source src="' + file + '" type="audio/mpeg">' +
+                        '</audio>';
+                }
 
                 // Remove old audio & append new
                 $titleHolder.find('.title').text(name);
