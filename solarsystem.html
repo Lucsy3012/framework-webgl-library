@@ -784,7 +784,7 @@
                 </div>
                 <div class="controller simulation-speed">
                     <form>
-                        <input class="value" id="simulation-speed" type="number" value="0.02" />
+                        <input class="value" id="simulation-speed" type="number" value="0.02" step="0.02" />
                     </form>
                     <div class="title">Simulation speed</div>
                 </div>
@@ -1112,8 +1112,8 @@
             // INIT Camera
             // --------------------------------------
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 400000);
-            camera.position.set(-2000, 1000, -1000);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.25, 400000);
+            camera.position.set(-1000, 500, -500);
 
             // INIT Renderer
             // --------------------------------------
@@ -1316,15 +1316,22 @@
                 const o   = s[key];
                 const distance = o.body.distance * AE * km / scale;
                 const imageFolder = (simulationMode === true) ? 'img/highres/' : 'img/';
+                const bodyMap = loader.load(imageFolder + o.body.map);
+
+                // Update Mipmapping Filter for crisp images
+                if (simulationMode === true) {
+                    bodyMap.minFilter = THREE.NearestMipmapNearestFilter;
+                    bodyMap.magFilter = THREE.NearestFilter;
+                }
 
 
 
                 /* Create body
                  * ------------------------------ */
                 if (key !== 'sun') {
-                    bodyMaterial = new THREE.MeshLambertMaterial({map: loader.load(imageFolder + o.body.map), color: o.body.color});
+                    bodyMaterial = new THREE.MeshLambertMaterial({map: bodyMap, color: o.body.color});
                 } else {
-                    bodyMaterial = new THREE.MeshBasicMaterial({map: loader.load(imageFolder + o.body.map), color: o.body.color});
+                    bodyMaterial = new THREE.MeshBasicMaterial({map: bodyMap, color: o.body.color});
                 }
 
                 bodyGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
@@ -1821,7 +1828,7 @@
                 $daysPast.text(window.daysInSimulationPast);
             }
 
-            $simulationSpeed.on('change keydown', function() {
+            $simulationSpeed.on('change keydown keyup', function() {
                 window.simulationSpeed = $(this).val();
             });
 
