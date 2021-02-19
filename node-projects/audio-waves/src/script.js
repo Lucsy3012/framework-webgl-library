@@ -36,8 +36,8 @@ const textureBlue = textureLoader.load('/textures/blue.png');
 const textureWhite = textureLoader.load('/textures/white.png');
 const textureDisplacementMap = textureLoader.load('/textures/displacement-map.jpg');
 const textures = [textureRed, textureBlue, textureWhite];
-const colors = [0x00aaff, 0xcf008d, 0xefe0dd];
-// const colors = [0xffaa00, 0x00bb88, 0xff0044];
+// const colors = [0x00aaff, 0xcf008d, 0xefe0dd];
+const colors = [0xffaa00, 0x00bb88, 0xff0044];
 
 
 // GUI
@@ -60,7 +60,7 @@ function init() {
     // --------------------------------------
 
     // camera = new THREE.PerspectiveCamera(75, settings.window.width / settings.window.height, 0.1, 100);
-    camera = new THREE.OrthographicCamera(-6, 6, -6, 6, 0.1, 100);
+    camera = new THREE.OrthographicCamera(-6, 6, -6, 6, 0.1, 1000);
     camera.position.set(0, 0, 3);
     scene.add(camera);
 
@@ -104,7 +104,10 @@ function sceneAnimation() {
         const speed = audioWaveSettings[i].speed;
         const frequency = audioWaveSettings[i].frequency;
         const elevation = audioWaveSettings[i].elevation;
-        const offset = audioWaveSettings[i].offset;
+        const distX = audioWaveSettings[i].distribution.x;
+        const distY = audioWaveSettings[i].distribution.y;
+        const center = audioWaveSettings[i].center;
+        const randomness = audioWaveSettings[i].randomness;
 
         for (let v = 0; v < vertices.count; ++v) {
             const x = (v * vertices.itemSize);
@@ -112,10 +115,20 @@ function sceneAnimation() {
             const z = (v * vertices.itemSize) + 2;
             const itemSize = vertices.itemSize;
 
-            vertices.array[z] =
-                (Math.sin(audioWaves[i].startX + (elapsedTime * speed) + (v / itemSize) / 500 * frequency) * elevation) * // standardized Z
-                ((vertices.array[x] - offset) * elevation) // offset X
-            ;
+            const calcStandardizedZ     = Math.sin(audioWaves[i].startX + (elapsedTime * speed) + (v / itemSize) / 500 * frequency) * elevation;
+            const calcDistribution      = distX * ((vertices.array[x] - distY) * elevation);
+            let calcCentering = 1;
+
+            if (center < 0) {
+                calcCentering = ((Math.sqrt(vertices.array[y]**2) * center));
+            } else if (center > 0) {
+                calcCentering = (((Math.sqrt(vertices.array[y]**2) * -1 * center) + (settings.audioWaves.height / 2)));
+            }
+
+            // calcCentering = Math.sqrt(vertices.array[y]**2) - ((settings.audioWaves.height / 2) * center);
+            /// calcCentering = (Math.sqrt(vertices.array[y] * vertices.array[y]) + ((settings.audioWaves.height / 2) * center)) / (settings.audioWaves.height / 2);
+
+            vertices.array[z] = calcStandardizedZ * calcDistribution * calcCentering;
         }
 
         audioWaves[i].geometry.attributes.position.needsUpdate = true;
@@ -144,7 +157,12 @@ function addAudioWaves(count = settings.audioWaves.count) {
             speed: Math.random() * 10,
             frequency: Math.random() * 0.1,
             elevation: Math.random(),
-            offset: 0
+            distribution: {
+                x: 1,
+                y: 0
+            },
+            center: 0,
+            randomness: Math.random() * 0.1
         }
 
         // Geometry
@@ -162,6 +180,7 @@ function addAudioWaves(count = settings.audioWaves.count) {
         materialAudioWave.wireframe = false;
         materialAudioWave.side = THREE.DoubleSide;
         materialAudioWave.transparent = false;
+        materialAudioWave.visible = true;
         materialAudioWave.opacity = 1;
         materialAudioWave.blending = 2;
         materialAudioWave.displacementMap = textureDisplacementMap;
@@ -183,10 +202,14 @@ function addAudioWaves(count = settings.audioWaves.count) {
         wavesFolder.add(audioWaveSettings[i], 'speed').min(0).max(10).step(0.01).name('Speed');
         wavesFolder.add(audioWaveSettings[i], 'frequency').min(0).max(0.5).step(0.01).name('Frequency');
         wavesFolder.add(audioWaveSettings[i], 'elevation').min(0).max(1).step(0.01).name('Elevation');
-        wavesFolder.add(audioWaveSettings[i], 'offset').min(0).max(5).step(0.01).name('Offset');
+        wavesFolder.add(audioWaveSettings[i].distribution, 'x').min(0).max(1).step(0.01).name('Distribution X');
+        wavesFolder.add(audioWaveSettings[i].distribution, 'y').min(0).max(5).step(0.01).name('Distribution Y');
+        wavesFolder.add(audioWaveSettings[i], 'center').min(-1).max(1).step(0.01).name('Center');
+        wavesFolder.add(audioWaveSettings[i], 'randomness').min(-1).max(1).step(0.01).name('Randomness');
         wavesFolder.add(meshAudioWave, 'startX').min(0).max(Math.PI).step(0.01).name('Start X');
         wavesFolder.add(meshAudioWave.material, 'displacementScale').min(0).max(1).step(0.001).name('Displacement Scale');
         wavesFolder.add(meshAudioWave.material, 'wireframe').name('Wireframe');
+        wavesFolder.add(meshAudioWave.material, 'visible').name('Visible');
 
         console.log(meshAudioWave);
     }
