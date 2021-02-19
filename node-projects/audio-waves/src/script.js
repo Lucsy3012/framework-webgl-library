@@ -44,6 +44,10 @@ const colors = [0xffaa00, 0x00bb88, 0xff0044];
 const gui = new dat.GUI;
 
 
+let randomHigh = (Math.random() * 95) + 1;
+let randomDecrease = true;
+
+
 init();
 sceneAnimation();
 
@@ -96,6 +100,7 @@ function init() {
 // Rendering the scene
 function sceneAnimation() {
     const elapsedTime = clock.getElapsedTime();
+    const t = clock.getElapsedTime();
 
     // Update meshs
     for (let i = 0; i < audioWaves.length; ++i) {
@@ -108,6 +113,19 @@ function sceneAnimation() {
         const distY = audioWaveSettings[i].distribution.y;
         const center = audioWaveSettings[i].center;
         const randomness = audioWaveSettings[i].randomness;
+        const elastic = audioWaveSettings[i].elastic;
+
+        if (randomDecrease === true) {
+            randomHigh = (randomHigh - 0.1 - randomness - (Math.random() * 0.1)) * 0.995;
+        } else {
+            randomHigh = Math.sqrt(randomHigh**2) * 1.2;
+        }
+
+        if (randomHigh < 0.05) {
+            randomDecrease = false;
+        } else if (randomHigh > (250 * Math.random()) + 50) {
+            randomDecrease = true;
+        }
 
         for (let v = 0; v < vertices.count; ++v) {
             const x = (v * vertices.itemSize);
@@ -115,20 +133,17 @@ function sceneAnimation() {
             const z = (v * vertices.itemSize) + 2;
             const itemSize = vertices.itemSize;
 
-            const calcStandardizedZ     = Math.sin(audioWaves[i].startX + (elapsedTime * speed) + (v / itemSize) / 500 * frequency) * elevation;
-            const calcDistribution      = distX * ((vertices.array[x] - distY) * elevation);
-            let calcCentering = 1;
+            const calcStandardizedZ = Math.sin(Math.sin(audioWaves[i].startX * randomness) + (elapsedTime * speed) + (v / itemSize) / 500 * frequency) * elevation;
+            const calcDistribution  = elastic ? distX * ((vertices.array[x] - distY) * elevation) * vertices.array[x] : distX * ((vertices.array[x] - distY) * elevation);
+            const calcCentering     = Math.sqrt(vertices.array[y]**2) - ((settings.audioWaves.height / 2) * center);
+            const calcRandom        = randomHigh * 0.02;
 
-            if (center < 0) {
-                calcCentering = ((Math.sqrt(vertices.array[y]**2) * center));
-            } else if (center > 0) {
-                calcCentering = (((Math.sqrt(vertices.array[y]**2) * -1 * center) + (settings.audioWaves.height / 2)));
-            }
-
-            // calcCentering = Math.sqrt(vertices.array[y]**2) - ((settings.audioWaves.height / 2) * center);
-            /// calcCentering = (Math.sqrt(vertices.array[y] * vertices.array[y]) + ((settings.audioWaves.height / 2) * center)) / (settings.audioWaves.height / 2);
-
-            vertices.array[z] = calcStandardizedZ * calcDistribution * calcCentering;
+            vertices.array[z] =
+                calcStandardizedZ *
+                calcCentering *
+                calcDistribution *
+                calcRandom
+            ;
         }
 
         audioWaves[i].geometry.attributes.position.needsUpdate = true;
@@ -154,15 +169,16 @@ function addAudioWaves(count = settings.audioWaves.count) {
     for (let i = 0; i < count; i++) {
 
         audioWaveSettings[i] = {
-            speed: Math.random() * 10,
-            frequency: Math.random() * 0.1,
-            elevation: Math.random(),
+            speed: (Math.random() * 10) + 10,
+            frequency: (Math.random() * 0.25) + 0.25,
+            elevation: Math.random() * 0.5,
             distribution: {
-                x: 1,
-                y: 0
+                x: Math.random(),
+                y: Math.random() * 5
             },
-            center: 0,
-            randomness: Math.random() * 0.1
+            center: 1,
+            randomness: Math.random(),
+            elastic: true
         }
 
         // Geometry
@@ -174,8 +190,8 @@ function addAudioWaves(count = settings.audioWaves.count) {
         );
 
         // Material
-        // materialAudioWave = new THREE.MeshBasicMaterial({ color: colors[i] });
-        materialAudioWave = new THREE.MeshMatcapMaterial();
+        materialAudioWave = new THREE.MeshBasicMaterial({ color: colors[i] });
+        // materialAudioWave = new THREE.MeshMatcapMaterial();
         materialAudioWave.matcap = textures[i];
         materialAudioWave.wireframe = false;
         materialAudioWave.side = THREE.DoubleSide;
@@ -184,7 +200,7 @@ function addAudioWaves(count = settings.audioWaves.count) {
         materialAudioWave.opacity = 1;
         materialAudioWave.blending = 2;
         materialAudioWave.displacementMap = textureDisplacementMap;
-        materialAudioWave.displacementScale = 0;
+        materialAudioWave.displacementScale = 0.5;
 
         // Mesh
         meshAudioWave = audioWaves[i] = new THREE.Mesh(geometryAudioWave, materialAudioWave);
@@ -199,15 +215,15 @@ function addAudioWaves(count = settings.audioWaves.count) {
 
         // GUI
         const wavesFolder = gui.addFolder('Wave ' + [i+1]);
-        wavesFolder.add(audioWaveSettings[i], 'speed').min(0).max(10).step(0.01).name('Speed');
+        wavesFolder.add(audioWaveSettings[i], 'speed').min(0).max(20).step(0.01).name('Speed');
         wavesFolder.add(audioWaveSettings[i], 'frequency').min(0).max(0.5).step(0.01).name('Frequency');
         wavesFolder.add(audioWaveSettings[i], 'elevation').min(0).max(1).step(0.01).name('Elevation');
-        wavesFolder.add(audioWaveSettings[i].distribution, 'x').min(0).max(1).step(0.01).name('Distribution X');
+        wavesFolder.add(audioWaveSettings[i].distribution, 'x').min(0).max(10).step(0.01).name('Distribution X');
         wavesFolder.add(audioWaveSettings[i].distribution, 'y').min(0).max(5).step(0.01).name('Distribution Y');
-        wavesFolder.add(audioWaveSettings[i], 'center').min(-1).max(1).step(0.01).name('Center');
+        wavesFolder.add(audioWaveSettings[i], 'center').min(0).max(1).step(0.01).name('Center');
         wavesFolder.add(audioWaveSettings[i], 'randomness').min(-1).max(1).step(0.01).name('Randomness');
-        wavesFolder.add(meshAudioWave, 'startX').min(0).max(Math.PI).step(0.01).name('Start X');
         wavesFolder.add(meshAudioWave.material, 'displacementScale').min(0).max(1).step(0.001).name('Displacement Scale');
+        wavesFolder.add(audioWaveSettings[i], 'elastic').name('Elastic');
         wavesFolder.add(meshAudioWave.material, 'wireframe').name('Wireframe');
         wavesFolder.add(meshAudioWave.material, 'visible').name('Visible');
 
