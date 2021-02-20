@@ -48,6 +48,12 @@ let randomHigh = (Math.random() * 95) + 1;
 let randomDecrease = true;
 
 
+// Math functions
+function normalize(x, pow = 2) {
+    return Math.sqrt(x**pow);
+}
+
+
 init();
 sceneAnimation();
 
@@ -99,26 +105,27 @@ function init() {
 
 // Rendering the scene
 function sceneAnimation() {
-    const elapsedTime = clock.getElapsedTime();
     const t = clock.getElapsedTime();
 
     // Update meshs
     for (let i = 0; i < audioWaves.length; ++i) {
 
-        const vertices = audioWaves[i].geometry.attributes.position;
-        const speed = audioWaveSettings[i].speed;
-        const frequency = audioWaveSettings[i].frequency;
-        const elevation = audioWaveSettings[i].elevation;
-        const distX = audioWaveSettings[i].distribution.x;
-        const distY = audioWaveSettings[i].distribution.y;
-        const center = audioWaveSettings[i].center;
-        const randomness = audioWaveSettings[i].randomness;
-        const elastic = audioWaveSettings[i].elastic;
+        // Variables
+        const vertices      = audioWaves[i].geometry.attributes.position;
+        const speed         = audioWaveSettings[i].speed;
+        const frequency     = audioWaveSettings[i].frequency;
+        const elevation     = audioWaveSettings[i].elevation;
+        const distX         = audioWaveSettings[i].distribution.x;
+        const distY         = audioWaveSettings[i].distribution.y;
+        const center        = audioWaveSettings[i].center;
+        const randomness    = audioWaveSettings[i].randomness;
+        const elastic       = audioWaveSettings[i].elastic;
 
+        // Randomness
         if (randomDecrease === true) {
             randomHigh = (randomHigh - 0.1 - randomness - (Math.random() * 0.1)) * 0.995;
         } else {
-            randomHigh = Math.sqrt(randomHigh**2) * 1.2;
+            randomHigh = normalize(randomHigh) * 1.2;
         }
 
         if (randomHigh < 0.05) {
@@ -127,15 +134,16 @@ function sceneAnimation() {
             randomDecrease = true;
         }
 
+        // Wave Animation
         for (let v = 0; v < vertices.count; ++v) {
             const x = (v * vertices.itemSize);
             const y = (v * vertices.itemSize) + 1;
             const z = (v * vertices.itemSize) + 2;
             const itemSize = vertices.itemSize;
 
-            const calcStandardizedZ = Math.sin(Math.sin(audioWaves[i].startX * randomness) + (elapsedTime * speed) + (v / itemSize) / 500 * frequency) * elevation;
+            const calcStandardizedZ = Math.sin(Math.sin(audioWaves[i].startX * randomness) + (t * speed) + (v / itemSize) / 500 * frequency) * elevation;
             const calcDistribution  = elastic ? distX * ((vertices.array[x] - distY) * elevation) * vertices.array[x] : distX * ((vertices.array[x] - distY) * elevation);
-            const calcCentering     = Math.sqrt(vertices.array[y]**2) - ((settings.audioWaves.height / 2) * center);
+            const calcCentering     = normalize(vertices.array[y]) - ((settings.audioWaves.height / 2) * center);
             const calcRandom        = randomHigh * 0.02;
 
             vertices.array[z] =
@@ -171,10 +179,10 @@ function addAudioWaves(count = settings.audioWaves.count) {
         audioWaveSettings[i] = {
             speed: (Math.random() * 10) + 10,
             frequency: (Math.random() * 0.25) + 0.25,
-            elevation: Math.random() * 0.5,
+            elevation: Math.random() * 0.25,
             distribution: {
                 x: Math.random(),
-                y: Math.random() * 5
+                y: Math.random() * 3
             },
             center: 1,
             randomness: Math.random(),
@@ -218,8 +226,8 @@ function addAudioWaves(count = settings.audioWaves.count) {
         wavesFolder.add(audioWaveSettings[i], 'speed').min(0).max(20).step(0.01).name('Speed');
         wavesFolder.add(audioWaveSettings[i], 'frequency').min(0).max(0.5).step(0.01).name('Frequency');
         wavesFolder.add(audioWaveSettings[i], 'elevation').min(0).max(1).step(0.01).name('Elevation');
-        wavesFolder.add(audioWaveSettings[i].distribution, 'x').min(0).max(10).step(0.01).name('Distribution X');
-        wavesFolder.add(audioWaveSettings[i].distribution, 'y').min(0).max(5).step(0.01).name('Distribution Y');
+        wavesFolder.add(audioWaveSettings[i].distribution, 'x').min(0).max(3).step(0.01).name('Distribution X');
+        wavesFolder.add(audioWaveSettings[i].distribution, 'y').min(0).max(3).step(0.01).name('Distribution Y');
         wavesFolder.add(audioWaveSettings[i], 'center').min(0).max(1).step(0.01).name('Center');
         wavesFolder.add(audioWaveSettings[i], 'randomness').min(-1).max(1).step(0.01).name('Randomness');
         wavesFolder.add(meshAudioWave.material, 'displacementScale').min(0).max(1).step(0.001).name('Displacement Scale');
