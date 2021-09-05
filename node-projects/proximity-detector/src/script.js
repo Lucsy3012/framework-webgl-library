@@ -7,6 +7,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 // Variables
 let container;
 let camera, scene, renderer, controls;
+let vec = new THREE.Vector3(); // for mouseWorldPosition create once and reuse
+let pos = new THREE.Vector3(); // for mouseWorldPosition create once and reuse
 
 
 // Global settings
@@ -23,7 +25,8 @@ const settings = {
         countY: 14,
         width: 1,
         height: 1,
-        gap: 2
+        gap: 2,
+        animationDuration: 1,
     },
     proximity: {
         radius: 6,
@@ -49,6 +52,10 @@ function normalize(x, pow = 2) {
     return Math.sqrt(x**pow);
 }
 
+function easeInOut(x) {
+    return Math.pow(Math.sin(x * Math.PI / 2), 2);
+}
+
 
 init();
 sceneAnimation();
@@ -65,7 +72,7 @@ function init() {
     // INIT Camera
     // --------------------------------------
 
-    camera = new THREE.PerspectiveCamera(75, settings.window.width / settings.window.height, 0.1, 100);
+    camera = new THREE.PerspectiveCamera(75, settings.window.width / settings.window.height, 0.1, 1000);
     // camera = new THREE.OrthographicCamera(-6, 6, -6, 6, 0.1, 100);
     camera.position.set(0, 0, 10);
     scene.add(camera);
@@ -102,43 +109,48 @@ function init() {
     // Proximity Detector
     addProximityDetector();
 
-    console.log(proximityDetector.position)
-
-    console.log(camera)
+    console.log(cubes)
 }
 
 // Rendering the scene
 function sceneAnimation() {
     const t = clock.getElapsedTime();
 
+    // Update sensor
+    positionOnMouseWorldPosition(proximityDetector);
     proximityDetector.scale.set(
       settings.proximity.scale,
       settings.proximity.scale,
       settings.proximity.scale
     );
 
-    proximityDetector.position.x = settings.window.mouseX * 5;
-    proximityDetector.position.y = settings.window.mouseY * -5;
-
     proximityDetector.geometry.attributes.position.needsUpdate = true;
     proximityDetector.scale.needsUpdate = true;
 
+    console.log(t)
+
+    // Update cubes
     for (let i = 0; i < cubes.length; i++) {
-
+        const cube = cubes[i];
         let v = new THREE.Vector3();
-        let t = cubes[i].getWorldPosition(v);
+        let p = cube.getWorldPosition(v);
 
-        console.log(t.distanceTo(proximityDetector.position));
 
-        if (t.distanceTo(proximityDetector.position) <= (settings.proximity.radius * settings.proximity.scale)) {
-            cubes[i].scale.set(0.8, 0.8, 0.8);
-            cubes[i].lookAt(proximityDetector.position);
+        // Approach 0 to 1 with ease-in-out function in y frames
+        // let x = (t - snapshotFrame) / settings.elements.animationDuration;
+        // let progress = easeInOut(x);
+
+        if (p.distanceTo(proximityDetector.position) <= (settings.proximity.radius * settings.proximity.scale)) {
+            cube.scale.set(0.8, 0.8, 0.8);
+            cube.lookAt(proximityDetector.position);
+            cube.material.color.set(0xFF0000);
         } else {
-            cubes[i].scale.set(1, 1, 1);
-            cubes[i].rotation.set(0, 0, 0);
+            cube.scale.set(1, 1, 1);
+            cube.rotation.set(0, 0, 0);
+            cube.material.color.set(0xFFC107);
         }
 
-        cubes[i].geometry.attributes.position.needsUpdate = true;
+        cube.geometry.attributes.position.needsUpdate = true;
     }
 
 
@@ -153,7 +165,7 @@ function sceneAnimation() {
 }
 
 
-// Cubes
+// Meshs
 function addCubes() {
     let geometryCube,
         materialCube,
@@ -161,23 +173,10 @@ function addCubes() {
 
     group = new THREE.Group();
 
-    for (let ix = 0; ix < settings.elements.countX; ix++) {
-        for (let iy = 0; iy < settings.elements.countY; iy++) {
+    let i = 0, ix, iy;
 
-            /*
-            cubeSettings[i] = {
-                speed: (Math.random() * 10) + 10,
-                frequency: (Math.random() * 0.25) + 0.25,
-                elevation: Math.random() * 0.25,
-                distribution: {
-                    x: Math.random(),
-                    y: Math.random() * 3
-                },
-                center: 1,
-                randomness: Math.random(),
-                elastic: true
-            }
-            */
+    for (ix = 0; ix < settings.elements.countX; ++ix) {
+        for (iy = 0; iy < settings.elements.countY; ++iy) {
 
             // Geometry
             geometryCube = new THREE.BoxGeometry(
@@ -191,7 +190,7 @@ function addCubes() {
             // materialCube = new THREE.MeshMatcapMaterial();
 
             // Mesh
-            meshCube = cubes[ix + iy] = new THREE.Mesh(geometryCube, materialCube);
+            meshCube = cubes[i++] = new THREE.Mesh(geometryCube, materialCube);
             meshCube.position.x = (ix + settings.elements.gap) * 2;
             meshCube.position.y = (iy + settings.elements.gap) * 2;
             meshCube.position.z = 0;
@@ -233,6 +232,25 @@ function addProximityDetector() {
     console.log(meshSphere)
     gui.add(settings.proximity, 'scale').min(0).max(4).step(0.01).name('Proximity');
     gui.add(meshSphere.material, 'visible').name('Visibility');
+}
+
+
+// Functionality
+function positionOnMouseWorldPosition(el) {
+    vec.set(
+      settings.window.mouseX,
+      settings.window.mouseY * -1,
+      0.5);
+
+    vec.unproject(camera);
+    vec.sub(camera.position).normalize();
+
+    const distance = -camera.position.z / vec.z;
+
+    el.position.copy(camera.position).add(vec.multiplyScalar(distance));
+
+    // el.position = pos
+    el.geometry.attributes.position.needsUpdate = true;
 }
 
 
@@ -282,7 +300,6 @@ function onWindowResize() {
 }
 
 function onMouseMove(e) {
-    settings.window.mouseX = (1 / window.innerWidth * e.clientX) - 0.5;
-    settings.window.mouseY = (1 / window.innerHeight * e.clientY) - 0.5;
-    // console.log(e);
+    settings.window.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+    settings.window.mouseY = (e.clientY / window.innerHeight) * 2 - 1;
 }
