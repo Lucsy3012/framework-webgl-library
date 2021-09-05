@@ -19,14 +19,16 @@ const settings = {
         mouseY: 0
     },
     elements: {
-        countX: 40,
-        countY: 40,
-        width: 5,
-        height: 5,
+        countX: 14,
+        countY: 14,
+        width: 1,
+        height: 1,
+        gap: 2
     },
     proximity: {
-        radius: 20,
-        visible: false
+        radius: 6,
+        scale: 1,
+        visible: true
     }
 }
 
@@ -35,6 +37,7 @@ const settings = {
 let cubes = [];
 let cubeSettings = [];
 let proximityDetector;
+let group;
 
 
 // GUI
@@ -62,10 +65,9 @@ function init() {
     // INIT Camera
     // --------------------------------------
 
-    // camera = new THREE.PerspectiveCamera(75, settings.window.width / settings.window.height, 0.1, 100);
-    camera = new THREE.OrthographicCamera(-6, 6, -6, 6, 0.1, 100);
-    camera.position.set(0, 0, 3);
-    camera.lookAt(0, 0, 0);
+    camera = new THREE.PerspectiveCamera(75, settings.window.width / settings.window.height, 0.1, 100);
+    // camera = new THREE.OrthographicCamera(-6, 6, -6, 6, 0.1, 100);
+    camera.position.set(0, 0, 10);
     scene.add(camera);
 
 
@@ -99,11 +101,46 @@ function init() {
 
     // Proximity Detector
     addProximityDetector();
+
+    console.log(proximityDetector.position)
+
+    console.log(camera)
 }
 
 // Rendering the scene
 function sceneAnimation() {
     const t = clock.getElapsedTime();
+
+    proximityDetector.scale.set(
+      settings.proximity.scale,
+      settings.proximity.scale,
+      settings.proximity.scale
+    );
+
+    proximityDetector.position.x = settings.window.mouseX * 5;
+    proximityDetector.position.y = settings.window.mouseY * -5;
+
+    proximityDetector.geometry.attributes.position.needsUpdate = true;
+    proximityDetector.scale.needsUpdate = true;
+
+    for (let i = 0; i < cubes.length; i++) {
+
+        let v = new THREE.Vector3();
+        let t = cubes[i].getWorldPosition(v);
+
+        console.log(t.distanceTo(proximityDetector.position));
+
+        if (t.distanceTo(proximityDetector.position) <= (settings.proximity.radius * settings.proximity.scale)) {
+            cubes[i].scale.set(0.8, 0.8, 0.8);
+            cubes[i].lookAt(proximityDetector.position);
+        } else {
+            cubes[i].scale.set(1, 1, 1);
+            cubes[i].rotation.set(0, 0, 0);
+        }
+
+        cubes[i].geometry.attributes.position.needsUpdate = true;
+    }
+
 
     // Update controls
     controls.update();
@@ -117,48 +154,59 @@ function sceneAnimation() {
 
 
 // Cubes
-function addCubes(count = settings.elements.count) {
+function addCubes() {
     let geometryCube,
         materialCube,
         meshCube;
 
-    for (let i = 0; i < count; i++) {
+    group = new THREE.Group();
 
-        /*
-        cubeSettings[i] = {
-            speed: (Math.random() * 10) + 10,
-            frequency: (Math.random() * 0.25) + 0.25,
-            elevation: Math.random() * 0.25,
-            distribution: {
-                x: Math.random(),
-                y: Math.random() * 3
-            },
-            center: 1,
-            randomness: Math.random(),
-            elastic: true
+    for (let ix = 0; ix < settings.elements.countX; ix++) {
+        for (let iy = 0; iy < settings.elements.countY; iy++) {
+
+            /*
+            cubeSettings[i] = {
+                speed: (Math.random() * 10) + 10,
+                frequency: (Math.random() * 0.25) + 0.25,
+                elevation: Math.random() * 0.25,
+                distribution: {
+                    x: Math.random(),
+                    y: Math.random() * 3
+                },
+                center: 1,
+                randomness: Math.random(),
+                elastic: true
+            }
+            */
+
+            // Geometry
+            geometryCube = new THREE.BoxGeometry(
+                settings.elements.width,
+                settings.elements.height,
+                settings.elements.height
+            );
+
+            // Material
+            materialCube = new THREE.MeshLambertMaterial({ color: 0xFFC107 });
+            // materialCube = new THREE.MeshMatcapMaterial();
+
+            // Mesh
+            meshCube = cubes[ix + iy] = new THREE.Mesh(geometryCube, materialCube);
+            meshCube.position.x = (ix + settings.elements.gap) * 2;
+            meshCube.position.y = (iy + settings.elements.gap) * 2;
+            meshCube.position.z = 0;
+            group.add(meshCube);
         }
-        */
-
-        // Geometry
-        geometryCube = new THREE.CubeGeometry(
-            settings.elements.width,
-            settings.elements.height,
-            settings.elements.height
-        );
-
-        // Material
-        materialCube = new THREE.MeshBasicMaterial({ color: 0x94ff19 });
-        // materialCube = new THREE.MeshMatcapMaterial();
-
-        // Mesh
-        meshCube = cubes[i] = new THREE.Mesh(geometryCube, materialCube);
-        meshCube.position.x = i;
-        meshCube.position.y = i;
-        meshCube.position.z = 0;
-        scene.add(meshCube);
-
-        console.log(meshCube);
     }
+
+    // Group
+    group.position.set(
+      settings.elements.countX * (settings.elements.width + settings.elements.gap) * -0.5,
+      settings.elements.countY * (settings.elements.height + settings.elements.gap) * -0.5,
+      0
+    )
+
+    scene.add(group);
 }
 
 
@@ -166,37 +214,45 @@ function addProximityDetector() {
     let geometrySphere,
         materialSphere,
         meshSphere;
-    
+
     // Geometry
     geometrySphere = new THREE.SphereGeometry(settings.proximity.radius, 16, 16);
-    
+
     // Material
-    materialSphere = new THREE.MeshBasicMaterial({ color: 0x050505 });
+    materialSphere = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
     materialSphere.transparent = true;
-    materialSphere.opacity = 0.33;
+    materialSphere.opacity = 0.5;
 
     // Mesh
     meshSphere = proximityDetector = new THREE.Mesh(geometrySphere, materialSphere);
-    meshSphere.visible = false;
-    meshSphere.opacity = 0.33;
+    meshSphere.visible = settings.proximity.visible;
 
     scene.add(meshSphere);
 
     // GUI
-    gui.add(settings.proximity, 'radius').min(0).max(200).step(0.01).name('Proximity');
-    gui.add(settings.proximity, 'visible').min(0).max(200).step(0.01).name('Visibility');
+    console.log(meshSphere)
+    gui.add(settings.proximity, 'scale').min(0).max(4).step(0.01).name('Proximity');
+    gui.add(meshSphere.material, 'visible').name('Visibility');
 }
 
 
 // Lights
 function addLights() {
-    const ambientLight = new THREE.AmbientLight(0xCC8423, 1);
+    const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x00ffff, 1, 500);
-    pointLight.position.set(0, 0, 50);
+    const pointLight1 = new THREE.PointLight(0xFFEB3B, 1, 500);
+    pointLight1.position.set(8, 5, 8);
+    scene.add(pointLight1);
 
-    scene.add(pointLight);
+    const pointLight2 = new THREE.PointLight(0xF39914, 1, 500);
+    pointLight2.position.set(-5, -10, 2);
+    scene.add(pointLight2);
+
+    const sphereSize = 1;
+    const pointLightHelper1 = new THREE.PointLightHelper( pointLight1, sphereSize );
+    const pointLightHelper2 = new THREE.PointLightHelper( pointLight2, sphereSize );
+    scene.add(pointLightHelper1, pointLightHelper2);
 }
 
 
@@ -226,7 +282,7 @@ function onWindowResize() {
 }
 
 function onMouseMove(e) {
-    settings.window.mouseX = e.clientX;
-    settings.window.mouseY = e.clientY;
-    console.log(e);
+    settings.window.mouseX = (1 / window.innerWidth * e.clientX) - 0.5;
+    settings.window.mouseY = (1 / window.innerHeight * e.clientY) - 0.5;
+    // console.log(e);
 }
