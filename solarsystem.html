@@ -9,7 +9,7 @@
 
     <meta property="og:title" content="Solarsystem Simulation | Explore our solarsystem virtually"/>
     <meta property="og:description" content="Space has always been a mystery to mankind. Its indescribable vastness and beauty are pleading for exploration."/>
-    <meta property="og:image" content="https://lucasdietrich.de/wp-content/uploads/2020/10/web-projects-solarsystem.jpg" />
+    <meta property="og:image" content="img/og-images/og-image-solarsystem.jpg" />
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="http://webgl.lucasdietrich.de/solarsystem.html"/>
     <meta property="og:site_name" content="Solarsystem Simulation | Explore our solarsystem virtually"/>
@@ -21,6 +21,16 @@
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicons/solarsystem/favicon-64.png">
 
     <style>
+        @font-face {
+            font-family: 'Satoshi';
+            src: url('fonts/Satoshi-Variable.woff2') format('woff2'),
+            url('fonts/Satoshi-Variable.woff') format('woff'),
+            url('fonts/Satoshi-Variable.ttf') format('truetype');
+            font-weight: 300 900;
+            font-display: swap;
+            font-style: normal;
+        }
+
         * { user-select: none; }
         body { margin: 0; background-color: #000; font-family: 'Inter', sans-serif; }
         canvas { display: block; }
@@ -78,6 +88,26 @@
         .ui-holder.hidden {
             opacity: 0;
             transform: scale(1.4);
+        }
+
+        body.loaded .ui-holder {
+            animation: addUI 3s ease-in-out;
+            animation-delay: 3s;
+            animation-fill-mode: backwards;
+        }
+
+        @keyframes addUI {
+            0% {
+                opacity: 0;
+                transform: scale(1.4);
+            }
+            50% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         /* Controller
@@ -194,20 +224,26 @@
         /* Navigation
          ----------------------------------- */
 
-        .navigator {
+        .navigator-holder {
             display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-direction: row-reverse;
+            flex-wrap: wrap;
+            grid-column-gap: clamp(40px, 4vw, 80px);
+            grid-row-gap: 10px;
+            justify-content: center;
             position: absolute;
-            top: 66%;
-            left: 70px;
-            transform-origin: left;
-            transform: rotate(-90deg);
-            animation: navigatorLeft 2s both ease;
+            top: 60px;
+            left: 50%;
+            animation: navigator 2s both ease;
             animation-delay: .5s;
             animation-direction: normal;
             animation-iteration-count: 1;
+        }
+
+        .navigator {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            flex-direction: row-reverse;
         }
 
         .navigator ul {
@@ -216,7 +252,6 @@
             margin: 0;
             padding: 0;
             list-style: none;
-            flex-direction: row-reverse;
         }
 
         .navigator li {
@@ -224,8 +259,9 @@
             width: 10px;
             height: 10px;
             border-radius: 10px;
-            border: 1px solid #ffffff55;
+            border: 1px solid #ffffff33;
             cursor: pointer;
+            transition: border .3s ease;
         }
 
         .navigator li::before {
@@ -245,18 +281,21 @@
 
         .navigator li::after {
             display: inline-block;
-            width: 70px;
             font-family: 'Inter', sans-serif;
             font-size: 10px;
-            padding: 5px 5px 5px 30px;
             font-weight: 400;
             color: #ffffff55;
             text-transform: uppercase;
             letter-spacing: 0.2em;
             opacity: 0;
             transform-origin: left;
-            transform: translate(5px, -40px) rotate(90deg);
+            transform: translate(calc(-50% + 4px), 0);
             transition: all .5s ease;
+            pointer-events: none;
+        }
+
+        .navigator li.active {
+            border-color: #ffffff55;
         }
 
         .navigator li:hover::before,
@@ -266,7 +305,7 @@
         }
 
         .navigator li:hover::after {
-            transform: translate(5px, -15px) rotate(90deg);
+            transform: translate(calc(-50% + 4px), 16px);
             opacity: 1;
         }
 
@@ -302,9 +341,9 @@
         .navigator li.pluto::after          { content: "Pluto"; }
 
         .navigator .legend {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 400;
-            color: #ffffff55;
+            color: #ffffff66;
             text-transform: uppercase;
             letter-spacing: 0.2em;
         }
@@ -315,20 +354,14 @@
             100% { transform: translateY(0); }
         }
 
-        @keyframes navigatorLeft {
-            0% { opacity: 0; left: -100px; }
+        @keyframes navigator {
+            0% { opacity: 0; transform: translate(-50%, -100px); }
             85% { opacity: 1; }
-            100% { left: 70px; }
-        }
-
-        @keyframes navigatorRight {
-            0% { opacity: 0; right: -100px; }
-            85% { opacity: 1; }
-            100% { right: 70px; }
+            100% { transform: translate(-50%, 0); }
         }
 
         /* Navigation right changes
-         ----------------------------------- */
+         -----------------------------------
 
         .navigator.right {
             top: 30%;
@@ -499,6 +532,8 @@
         }
 
         #loader {
+            --border-color: #ffffff22;
+            --text-shadow-color: #ffffff66;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -507,11 +542,13 @@
             right: 0;
             bottom: 0;
             height: 100vh;
-            background: linear-gradient(220deg, rgb(11 11 14) 0%, rgb(2 4 14) 100%);
-            /* background: linear-gradient(220deg, rgb(11 11 14) 0%, rgb(2 4 14) 100%); */
-            background-color: #131315;
+            color: #ffffff55;
+            font-size: 14px;
+            font-weight: 400;
+            background: linear-gradient(220deg, rgb(0 0 0) 0%, rgb(11 14 28) 100%);
+            /* background: linear-gradient(220deg, rgb(0 0 0) 0%, rgb(11 14 28) 100%); */
+            background-color: rgb(2 4 14);
             transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
-            transition-delay: 0.25s;
             overflow: hidden;
             z-index: 100;
         }
@@ -524,20 +561,91 @@
         }
 
         #loader .loading-text {
-            font-size: 3.5vmin;
-            font-weight: 400;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            text-shadow: 0 0 4px #ffffff66;
+            font-family: 'Satoshi', 'Inter', sans-serif;
+            font-size: 7.5vmin;
+            font-weight: 500;
+            letter-spacing: 0.02em;
             color: #fff;
+            animation: textShadowPulse 8s cubic-bezier(0.67, 0.04, 0.18, 0.96) infinite alternate both;
+        }
+
+        #loader .loading-text-instructions-holder {
+            display: flex;
+            flex-wrap: wrap;
+            grid-gap: 10px;
+            margin-top: 40px;
+            padding: 0 40px;
+            max-width: 600px;
         }
 
         #loader .loading-text-instructions {
-            color: #ffffff52;
-            font-size: 16px;
-            font-weight: 300;
-            margin-top: 24px;
+            --padding-x: 22px;
+            --padding-y: 16px;
+            width: 100%;
+            padding: var(--padding-y) var(--padding-x);
+            text-align: left;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
             line-height: 2;
+        }
+
+        #loader .loading-text-instructions p {
+            margin: 0;
+            line-height: 1.7;
+        }
+
+        #loader .loading-text-instructions hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: var(--padding-y) calc(var(--padding-x) * -1);
+        }
+
+        #loader .loading-text-instructions dl {
+            display: grid;
+            grid-template-columns: 144px auto;
+            margin: 0;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        #loader .loading-text-eyebrow {
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        #loader kbd {
+            font-family: 'Inter', sans-serif;
+            display: inline-block;
+            margin: 0 4px;
+            padding: 3px 8px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            transform: translateY(-1px);
+            text-shadow: 0 0 1px #ffffff00;
+            transition: all .5s ease;
+        }
+
+        #loader #start {
+            font-size: 14px;
+            padding: 20px;
+            margin-top: 20px;
+            text-shadow: 0 0 1px #ffffff00;
+            transition: all .5s ease;
+            cursor: pointer;
+        }
+
+        #loader #start:hover {
+            text-shadow: 0 0 4px var(--text-shadow-color);
+            color: #fff;
+        }
+
+        #loader #start:hover kbd {
+            text-shadow: 0 0 4px var(--text-shadow-color);
+            color: #fff;
+            border-color: #ffffff99;
         }
 
         body.loaded #canvas-container {
@@ -550,9 +658,16 @@
         }
 
         body.loaded #loader .container {
-            margin-top: 5vmax;
-            transform: translateY(100%);
-            clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+            opacity: 0;
+        }
+
+        @keyframes textShadowPulse {
+            0%, 100% {
+                text-shadow: 0 0 3px #ffffff11;
+            }
+            50% {
+                text-shadow: 0 0 8px #ffffff55;
+            }
         }
 
 
@@ -605,10 +720,36 @@
 
     <div id="loader">
         <div class="container">
-            <div class="loading-text">Loading assets</div>
-            <div class="loading-text-instructions">
-                Use the mouse to navigate -
-                <br/>Hide the user interface in the top right corner
+            <div class="loading-text-eyebrow">Welcome to the simulation</div>
+            <div class="loading-text">Solarsystem</div>
+            <div class="loading-text-instructions-holder">
+                <div class="loading-text-instructions">
+                    <p>
+                        Use your mouse to zoom in/out and pan around them.
+                        Use the top navigation to change planets.
+                        You'll always be locked on to a planet.
+                    </p>
+                    <hr>
+                    <dl>
+                        <dt>Pan:</dt>
+                        <dd>Press and hold mouse + move</dd>
+
+                        <dt>Zoom in/out:</dt>
+                        <dd>Mouse-Wheel up/down</dd>
+
+                        <dt>Hide/Show UI:</dt>
+                        <dd>Top-right corner</dd>
+
+                        <dt>Music controls:</dt>
+                        <dd>Bottom-right corner</dd>
+
+                        <dt>Simulation controls:</dt>
+                        <dd>Bottom-left corner</dd>
+                    </dl>
+                </div>
+            </div>
+            <div id="start" tabindex="0">
+                Press <kbd>Enter</kbd> or click here to start your exploration
             </div>
         </div>
     </div>
@@ -784,47 +925,51 @@
                 </div>
                 <div class="controller simulation-speed">
                     <form>
-                        <input class="value" id="simulation-speed" type="number" value="0.02" step="0.02" />
+                        <input class="value" id="simulation-speed" type="number" value="0.02" step="0.01" />
                     </form>
                     <div class="title">Simulation speed</div>
                 </div>
 
-                <!-- Navigator left -->
-                <div class="navigator">
-                    <nav id="navigate-to">
-                        <ul>
-                            <li class="sun" data-body="sun"></li>
-                            <li class="mercury" data-body="mercury"></li>
-                            <li class="venus" data-body="venus"></li>
-                            <li class="earth" data-body="earth"></li>
-                            <li class="mars" data-body="mars"></li>
-                            <li class="jupiter" data-body="jupiter"></li>
-                            <li class="saturn" data-body="saturn"></li>
-                            <li class="uranus" data-body="uranus"></li>
-                            <li class="neptune" data-body="neptune"></li>
-                            <li class="pluto" data-body="pluto"></li>
-                        </ul>
-                    </nav>
-                    <div class="legend">Attach to</div>
-                </div>
+                <!-- Navigators -->
+                <div class="navigator-holder">
 
-                <!-- Navigator right -->
-                <div class="navigator right">
-                    <nav id="look-at">
-                        <ul>
-                            <li class="sun active" data-body="sun"></li>
-                            <li class="mercury" data-body="mercury"></li>
-                            <li class="venus" data-body="venus"></li>
-                            <li class="earth" data-body="earth"></li>
-                            <li class="mars" data-body="mars"></li>
-                            <li class="jupiter" data-body="jupiter"></li>
-                            <li class="saturn" data-body="saturn"></li>
-                            <li class="uranus" data-body="uranus"></li>
-                            <li class="neptune" data-body="neptune"></li>
-                            <li class="pluto" data-body="pluto"></li>
-                        </ul>
-                    </nav>
-                    <div class="legend">Look at</div>
+                    <!-- Navigator left -->
+                    <div class="navigator">
+                        <nav id="navigate-to">
+                            <ul>
+                                <li class="sun" data-body="sun"></li>
+                                <li class="mercury" data-body="mercury"></li>
+                                <li class="venus" data-body="venus"></li>
+                                <li class="earth" data-body="earth"></li>
+                                <li class="mars active" data-body="mars"></li>
+                                <li class="jupiter" data-body="jupiter"></li>
+                                <li class="saturn" data-body="saturn"></li>
+                                <li class="uranus" data-body="uranus"></li>
+                                <li class="neptune" data-body="neptune"></li>
+                                <li class="pluto" data-body="pluto"></li>
+                            </ul>
+                        </nav>
+                        <div class="legend">Attach to</div>
+                    </div>
+
+                    <!-- Navigator right -->
+                    <div class="navigator right">
+                        <nav id="look-at">
+                            <ul>
+                                <li class="sun" data-body="sun"></li>
+                                <li class="mercury" data-body="mercury"></li>
+                                <li class="venus" data-body="venus"></li>
+                                <li class="earth" data-body="earth"></li>
+                                <li class="mars active" data-body="mars"></li>
+                                <li class="jupiter" data-body="jupiter"></li>
+                                <li class="saturn" data-body="saturn"></li>
+                                <li class="uranus" data-body="uranus"></li>
+                                <li class="neptune" data-body="neptune"></li>
+                                <li class="pluto" data-body="pluto"></li>
+                            </ul>
+                        </nav>
+                        <div class="legend">Look at</div>
+                    </div>
                 </div>
 
                 <!-- Audioplayer -->
@@ -838,7 +983,7 @@
                         <div class="bar"></div>
                     </div>
                     <div class="shuffle" id="shuffle" title="Shuffle to another song">
-                        <img src="img/shuffle.svg" alt="Shuffle" />
+                        <img src="img/shuffle.svg" alt="Shuffle">
                     </div>
                 </div>
             </div>
@@ -863,11 +1008,15 @@
         let particles = [],
             particle, geometry, material, particleMap, spriteMaterial;
 
+        // Three Objects
+        const clock = new THREE.Clock();
+
         // Math variables
         const pi2 = Math.PI * 2; // full rotation
         const deg = Math.PI / 180; // one degree
         const sin1 = Math.PI / 2; // one sin
         const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
 
         // Math functions
         function easeInOut(x) {
@@ -875,12 +1024,13 @@
         }
 
         // Story variables
-        let snapshotFrame;
+        let snapshotFrame = 0;
         let snapshotCameraPosition = new THREE.Vector3();
         let snapshotCameraRotation = new THREE.Vector3();
         let storyTransition = false;
         let attached = false;
         let locked = true;
+        let loaded = false;
 
         /*
          * Solarsystem Documentation
@@ -905,15 +1055,24 @@
         let simulationMode          = true;
         let milliseconds            = 0;
         let daysInSimulationPast    = 0;
-        let simulationSpeed         = window.simulationSpeed = 0.02;
+        let simulationSpeed         = window.simulationSpeed = 0.02; // 0,0027 = realtime
         const updateDateEvent       = new Event('updateDate');
+
+        // User Params
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        const paramsOptions = {
+            hideAtmosphere: urlParams.get('hideAtmosphere'),
+            highRes: urlParams.get('highRes')
+        }
 
         // Variables
         const AE    = 149597870;
         const km    = 1 / 1000;
         const year  = 365;
         const day   = 1 / year;
-        const fps   = 60;
+        const fps   = 60; // todo optimise for other Hz monitors as well
         const scale = 50;
         const solarsystem = {
             "sun": {
@@ -1112,7 +1271,7 @@
             // INIT Camera
             // --------------------------------------
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.25, 400000);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.25, 300000);
             camera.position.set(-1000, 500, -500);
 
             // INIT Renderer
@@ -1169,8 +1328,8 @@
             // --------------------------------------
 
             window.daysInSimulationPast = daysInSimulationPast;
-            window.simulationNavigate = '';
-            window.simulationLookAt = 'sun';
+            window.simulationNavigate = 'mars';
+            window.simulationLookAt = 'mars';
 
             // Attach Trigger
             document.addEventListener('navigatorAttach', function() {
@@ -1192,17 +1351,39 @@
 
             // Rendered Trigger
             document.addEventListener('renderedObjects', function() {
-                for (let i = 0; i < orbits.length; ++i) {
-                    orbits[i].rotation.y = THREE.MathUtils.randFloatSpread(180) * deg; // randomize initial placement
+                if (loaded === false) {
+                    console.log('Get ready to explore our solarsystem!');
+                    loaded = true;
+                    $('body').addClass('loaded');
+
+                    // randomize initial placement
+                    for (let i = 0; i < orbits.length; ++i) {
+                        orbits[i].rotation.y = THREE.MathUtils.randFloatSpread(180) * deg;
+                    }
+
+                    // Start at "Mars"
+                    const startBody = bodies.filter(b => b.name === 'mars')
+
+                    // Move to "Mars"
+                    storyTriggerRewrites()
+
+                    // Detach "Mars" after 4 seconds
+                    setTimeout(function () {
+                        $(`#navigate-to [data-body="${startBody[0].name}"]`).trigger('click');
+                    }, 4000)
+                    // todo would need to be 200 frames
                 }
             });
-
         }
 
 
         // Rendering the scene
         function sceneAnimation() {
             requestAnimationFrame(sceneAnimation);
+
+            // todo utilize clock instead of fps * milliseconds logic because it doesn't really makes sense
+            // const t = clock.getElapsedTime();
+
             scene.updateMatrixWorld();
 
             // Counting
@@ -1241,6 +1422,7 @@
 
                     orbits[i].rotation.x = solarsystem[key].orbital.tilt * deg;
                     orbits[i].rotation.y += (pi2 / circum * traveledPerDay) / fps * window.simulationSpeed;
+                    // orbits[i].rotation.y += (pi2 / circum * traveledPerDay) / t;
                 }
             }
 
@@ -1257,6 +1439,7 @@
                     let traveledPerDay = o.body.speed * 60 * 60 * 24;
 
                     gBodies[i].rotation.y -= (pi2 / circum * traveledPerDay) / fps * window.simulationSpeed;
+                    // gBodies[i].rotation.y -= (pi2 / circum * traveledPerDay) / t;
                 }
             }
 
@@ -1267,10 +1450,12 @@
                 let o = solarsystem[key];
 
                 bodies[i].rotation.y += pi2 * o.body.rotationSpeed / fps * window.simulationSpeed;
+                // bodies[i].rotation.y = pi2 * o.body.rotationSpeed * t * window.simulationSpeed;
 
                 // Atmosphere rotation
                 if (atmospheres[i] && o.atmosphere.rotationMultiplicator) {
                     atmospheres[i].rotation.y += pi2 * o.body.rotationSpeed / fps * window.simulationSpeed * o.atmosphere.rotationMultiplicator;
+                    // atmospheres[i].rotation.y += pi2 * o.body.rotationSpeed / t * o.atmosphere.rotationMultiplicator;
                 }
             }
 
@@ -1279,10 +1464,10 @@
             if (storyTransition === true) {
                 bodies.forEach(function(body) {
                     if (body.name === window.simulationNavigate) {
-                        storyAnimateCameraPosition(body, framesCount, snapshotFrame, snapshotCameraPosition, 100);
+                        storyAnimateCameraPosition(body, framesCount, snapshotFrame, snapshotCameraPosition, 200);
                     }
                     if (body.name === window.simulationLookAt) {
-                        storyAnimateCameraRotation(body, framesCount, snapshotFrame, snapshotCameraRotation, 100);
+                        storyAnimateCameraRotation(body, framesCount, snapshotFrame, snapshotCameraRotation, 200);
                     }
                 });
             }
@@ -1315,7 +1500,7 @@
                 const key = Object.keys(s)[i];
                 const o   = s[key];
                 const distance = o.body.distance * AE * km / scale;
-                const imageFolder = (simulationMode === true) ? 'img/highres/' : 'img/';
+                const imageFolder = (simulationMode === true && paramsOptions.highRes === "true") ? 'img/highres/' : 'img/highres-compressed/';
                 const bodyMap = loader.load(imageFolder + o.body.map);
 
                 // Update Mipmapping Filter for crisp images
@@ -1348,7 +1533,7 @@
 
                 /* Create atmosphere
                  * ------------------------------ */
-                if (o.atmosphere) {
+                if (o.atmosphere && paramsOptions.hideAtmosphere !== "true") {
                     atmosphereGeometry  = new THREE.SphereBufferGeometry(o.body.radius * km * o.atmosphere.elevation, 64, 64);
                     atmosphereMaterial  = new THREE.MeshLambertMaterial({color: o.body.color, transparent: true});
                     atmosphere = atmospheres[i] = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
@@ -1544,17 +1729,6 @@
             }
         }
 
-        /* not functional
-        function intersectDblClick(objs) {
-            var intersects = rayCastingObjs(objs);
-
-            if (intersects.length > 0) {
-                storyAnimateCameraRotation(intersects[0].object, framesCount, snapshotFrame, snapshotCameraRotation, 100);
-            }
-        }
-        */
-
-
 
         // Story
 
@@ -1682,10 +1856,6 @@
                     "file": "audio/endless_space_the_endless.mp3"
                 },
                 {
-                    "name": "Endless Space - Beneath The Strings",
-                    "file": "audio/endless_space_beneath_the_strings.mp3"
-                },
-                {
                     "name": "Endless Space - TransX",
                     "file": "audio/endless_space_transx.mp3"
                 },
@@ -1718,10 +1888,6 @@
                     "file": "audio/oliver_patrice_weder_minutes_and_hours.mp3"
                 },
                 {
-                    "name": "Interstellar - A Place Among The Stars",
-                    "file": "audio/interstellar_a_place_among_the_stars.mp3"
-                },
-                {
                     "name": "Interstellar - Message From Home",
                     "file": "audio/interstellar_message_from_home.mp3"
                 },
@@ -1732,6 +1898,22 @@
                 {
                     "name": "Bonjr - It's Ok, You're Ok",
                     "file": "audio/bonjr_its_ok_youre_ok.mp3"
+                },
+                {
+                    "name": "Animal Crossing - 1AM",
+                    "file": "audio/animal_crossing_1am.mp3"
+                },
+                {
+                    "name": "DARK - Ich Dachte, Ich Haette Mehr Zeit",
+                    "file": "audio/dark_ich_dachte_ich_haette_mehr_zeit.mp3"
+                },
+                {
+                    "name": "Guild Wars - Droknar's Forge",
+                    "file": "audio/guild_wars_droknars_forge.mp3"
+                },
+                {
+                    "name": "Skyrim - Kyne's Peace",
+                    "file": "audio/skyrim_kynes_peace.mp3"
                 }
             ];
 
@@ -1767,7 +1949,6 @@
             }
 
 
-            // Play / Pause
             $play.on('click', function() {
                 playPause();
             });
@@ -1804,15 +1985,18 @@
             // ----------------------------------
 
             const renderedObjectsEvent = new Event('renderedObjects');
-            let image1 = new Image();
-            image1.src = 'img/highres/earth.jpg';
-            image1.onload = function() {
 
-                // Reveal canvas
-                console.log('Get ready to explore our solarsystem!');
-                $('body').addClass('loaded');
+            document.getElementById('start').addEventListener('click', function() {
                 document.dispatchEvent(renderedObjectsEvent);
-            }
+                playPause();
+            });
+
+            window.addEventListener('keydown', function(e) {
+                if (e.code === 'Enter') {
+                    document.dispatchEvent(renderedObjectsEvent);
+                    playPause();
+                }
+            })
 
 
 
