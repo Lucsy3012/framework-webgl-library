@@ -1053,7 +1053,7 @@
         }
 
         // Story variables
-        let snapshotFrame = 0;
+        let snapshotTime = 0;
         let snapshotCameraPosition = new THREE.Vector3();
         let snapshotCameraRotation = new THREE.Vector3();
         let storyTransition = false;
@@ -1082,6 +1082,8 @@
 
         // Simulation
         let simulationMode          = true;
+        let elapsedTime             = 0;
+        let deltaTime               = 0;
         let oldElapsedTime          = 0;
         let daysInSimulationPast    = 0;
         let simulationTime          = window.simulationTime = 0;
@@ -1438,8 +1440,9 @@
         function sceneAnimation() {
             requestAnimationFrame(sceneAnimation);
 
-            const elapsedTime = clock.getElapsedTime()
-            const deltaTime = elapsedTime - oldElapsedTime
+            // Time
+            elapsedTime = clock.getElapsedTime()
+            deltaTime = elapsedTime - oldElapsedTime
             oldElapsedTime = elapsedTime
 
             scene.updateMatrixWorld();
@@ -1528,10 +1531,10 @@
             if (storyTransition === true) {
                 bodies.forEach(function(body) {
                     if (body.name === window.simulationNavigate) {
-                        storyAnimateCameraPosition(body, framesCount, snapshotFrame, snapshotCameraPosition, 200);
+                        storyAnimateCameraPosition(body, snapshotTime, snapshotCameraPosition, 4);
                     }
                     if (body.name === window.simulationLookAt) {
-                        storyAnimateCameraRotation(body, framesCount, snapshotFrame, snapshotCameraRotation, 200);
+                        storyAnimateCameraRotation(body, snapshotTime, snapshotCameraRotation, 4);
                     }
                 });
             }
@@ -1871,7 +1874,7 @@
 
             // Get current status on trigger
             storyTransition = true;
-            snapshotFrame = framesCount;
+            snapshotTime = elapsedTime;
             snapshotCameraPosition.x = camera.position.x;
             snapshotCameraPosition.y = camera.position.y;
             snapshotCameraPosition.z = camera.position.z;
@@ -1880,7 +1883,7 @@
             snapshotCameraRotation.z = camera.rotation.z;
         }
 
-        function storyAnimateCameraPosition(target, framesCount, snapshotFrame, snapshotCameraPosition, countTo) {
+        function storyAnimateCameraPosition(target, snapshotTime, snapshotCameraPosition, duration) {
             let current = camera.position;
             let v = new THREE.Vector3();
             let t = target.getWorldPosition(v);
@@ -1888,7 +1891,7 @@
             let r = target.geometry.parameters.radius;
 
             // Approach 0 to 1 with ease-in-out function in y frames
-            let x = (framesCount - snapshotFrame) / countTo;
+            let x = (elapsedTime - snapshotTime) / duration;
             let progress = easeInOut(x);
 
             // Define multiplications for elevated view of body
@@ -1911,7 +1914,7 @@
                 if (x >= 1) {
                     attached = true;
 
-                    // Slowly navigate to body
+                // Slowly navigate to body
                 } else {
                     current.x = s.x + ((t.x + (elevation.x * r * multiplicator.x) - s.x) * progress);
                     current.y = s.y + ((t.y + (elevation.y * r * multiplicator.y) - s.y) * progress);
@@ -1921,14 +1924,14 @@
 
         }
 
-        function storyAnimateCameraRotation(target, framesCount, snapshotFrame, snapshotCameraRotation, countTo) {
+        function storyAnimateCameraRotation(target, snapshotTime, snapshotCameraRotation, duration) {
             let current = camera.rotation;
             let v = new THREE.Vector3();
             let t = target.getWorldPosition(v);
             let s = snapshotCameraRotation;
 
             // Approach 0 to 1 with ease-in-out function in y frames
-            let x = (framesCount - snapshotFrame) / countTo;
+            let x = (elapsedTime - snapshotTime) / duration;
             let progress = easeInOut(x);
 
             // Lock if progress is completed
@@ -2080,7 +2083,7 @@
                 $titleHolder.find('.title').text(name);
                 $body.find('audio').remove();
                 $body.append(audioElement);
-                document.getElementById('audio').volume = 0.2;
+                document.getElementById('audio').volume = 0.0;
             }
 
 
