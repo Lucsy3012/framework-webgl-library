@@ -31,29 +31,14 @@
             font-style: normal;
         }
 
-        /* Todo set up  theme */
+        /* Tweakpane theme settings */
         :root {
-            --tp-base-background-color: hsla(0, 0%, 10%, 0.8);
-            --tp-base-shadow-color: hsla(0, 0%, 0%, 0.2);
-            --tp-button-background-color: hsla(0, 0%, 80%, 1);
-            --tp-button-background-color-active: hsla(0, 0%, 100%, 1);
-            --tp-button-background-color-focus: hsla(0, 0%, 95%, 1);
-            --tp-button-background-color-hover: hsla(0, 0%, 85%, 1);
-            --tp-button-foreground-color: hsla(0, 0%, 0%, 0.8);
-            --tp-container-background-color: hsla(0, 0%, 0%, 0.3);
-            --tp-container-background-color-active: hsla(0, 0%, 0%, 0.6);
-            --tp-container-background-color-focus: hsla(0, 0%, 0%, 0.5);
-            --tp-container-background-color-hover: hsla(0, 0%, 0%, 0.4);
-            --tp-container-foreground-color: hsla(0, 0%, 100%, 0.5);
-            --tp-groove-foreground-color: hsla(0, 0%, 0%, 0.2);
-            --tp-input-background-color: hsla(0, 0%, 0%, 0.3);
-            --tp-input-background-color-active: hsla(0, 0%, 0%, 0.6);
-            --tp-input-background-color-focus: hsla(0, 0%, 0%, 0.5);
-            --tp-input-background-color-hover: hsla(0, 0%, 0%, 0.4);
-            --tp-input-foreground-color: hsla(0, 0%, 100%, 0.5);
-            --tp-label-foreground-color: hsla(0, 0%, 100%, 0.5);
-            --tp-monitor-background-color: hsla(0, 0%, 0%, 0.3);
-            --tp-monitor-foreground-color: hsla(0, 0%, 100%, 0.3);
+            --tp-font-family: 'Inter', sans-serif;
+            --tp-base-border-radius: 4px;
+            --tp-container-horizontal-padding: 6px;
+            --tp-container-vertical-padding: 6px;
+            --tp-blade-spacing: 6px;
+            --tp-base-background-color: rgb(2 2 6);
         }
 
         * { user-select: none; }
@@ -85,19 +70,6 @@
             z-index: 1;
             transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
             transition-delay: 0.25s;
-        }
-
-        .hide-ui {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 7vmin;
-            height: 7vmin;
-            z-index: 1;
-        }
-
-        .hide-ui:hover {
-            background-color: #fff2;
         }
 
         .ui-holder {
@@ -198,6 +170,17 @@
             top: 56px;
             bottom: auto;
             left: auto;
+        }
+
+        /* Tweakpane
+         ----------------------------------- */
+
+        .controller.panel .tp-rotv {
+            font-size: 12px;
+        }
+
+        .controller.panel .tp-lblv_v {
+            width: 20px;
         }
 
         /* Body information
@@ -441,8 +424,8 @@
 
         .audio-player .title--holder {
             max-width: 15vw;
-            width: 240px;
-            margin: 0 30px 0 0;
+            width: 200px;
+            margin: 0 10px 0 0;
             text-align: left;
             outline: none;
             border: none;
@@ -653,7 +636,7 @@
             text-transform: uppercase;
         }
 
-        #loader kbd {
+        kbd {
             font-family: 'Inter', sans-serif;
             display: inline-block;
             margin: 0 4px;
@@ -682,6 +665,7 @@
             color: #fff;
         }
 
+        kbd:hover,
         #loader #start:hover kbd {
             text-shadow: 0 0 4px var(--text-shadow-color);
             color: #fff;
@@ -723,8 +707,8 @@
             justify-content: center;
             align-items: center;
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: 0;
+            left: 0;
             width: 16px;
             height: 16px;
             padding: 5px;
@@ -734,6 +718,7 @@
             transform: translate(-50%, -50%);
             transition: opacity 1s ease-in-out, padding .2s ease-in-out, border .2s ease-in-out;
             pointer-events: none;
+            z-index: 1;
         }
 
         #cursor::before {
@@ -777,14 +762,11 @@
                         <dt>Zoom in/out:</dt>
                         <dd>Mouse-Wheel up/down</dd>
 
-                        <dt>Hide/Show UI:</dt>
-                        <dd>Top-right corner</dd>
+                        <dt>Simulation controls:</dt>
+                        <dd>Bottom-left corner</dd>
 
                         <dt>Music controls:</dt>
                         <dd>Bottom-right corner</dd>
-
-                        <dt>Simulation controls:</dt>
-                        <dd>Bottom-left corner</dd>
                     </dl>
                 </div>
             </div>
@@ -797,7 +779,6 @@
     <div class="story--holder" id="universe">
         <div id="canvas-container">
             <div id="cursor"></div>
-            <div class="hide-ui"></div>
             <div class="body-information">
 
                 <!-- Sun -->
@@ -1053,6 +1034,9 @@
 
         let particles = [],
             particle, geometry, material, particleMap, spriteMaterial;
+        
+        let stars = [],
+            starsGeometry, starsMaterial, starPositions, starColors;
 
         // Three Objects
         const clock = new THREE.Clock();
@@ -1122,7 +1106,8 @@
         const paneOptions = {
             showAtmosphere: true,
             showOrbits: false,
-            highRes: false
+            highRes: false,
+            hideUI: false,
         }
 
         pane.addInput(paneOptions, 'showAtmosphere', { label: 'Show Atmosphere' }).on('change', () => {
@@ -1134,6 +1119,9 @@
             orbits.forEach((orbitGroup) => {
                 orbitGroup.children[0].visible = paneOptions.showOrbits;
             });
+        });
+        pane.addInput(paneOptions, 'hideUI', { label: 'Hide UI (Press any key to show again)' }).on('change', () => {
+            document.querySelector('.ui-holder').classList.toggle('hidden', paneOptions.hideUI);
         });
 
 
@@ -1207,14 +1195,16 @@
                     "rotationSpeed": 1,
                     "tilt": 23.44,
                     "color": "#5f9bd9",
-                    "map": "earth.jpg"
+                    "map": "earth.jpg",
+                    "normalMap": "earth_normal.jpg",
                 },
                 "atmosphere": {
-                    "elevation": 1.025,
+                    "elevation": 1.0125,
                     "opacity": 1,
-                    "blending": 1,
-                    "rotationMultiplicator": 1.1,
-                    "map": "earth_atmosphere.png"
+                    "blending": 2,
+                    "rotationMultiplicator": 1.075,
+                    "map": "earth_atmosphere.jpg",
+                    "transparent": true
                 }
             },
             "mars": {
@@ -1231,7 +1221,7 @@
                     "map": "mars.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.025
+                    "elevation": 1.0125
                 }
             },
             "jupiter": {
@@ -1248,7 +1238,7 @@
                     "map": "jupiter.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 }
             },
             "saturn": {
@@ -1265,7 +1255,7 @@
                     "map": "saturn.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 },
                 "rings": {
                     // not real sizes,
@@ -1288,7 +1278,7 @@
                     "map": "uranus.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 }
             },
             "neptune": {
@@ -1305,7 +1295,7 @@
                     "map": "neptune.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 }
             },
             "pluto": {
@@ -1322,7 +1312,7 @@
                     "map": "pluto.jpg"
                 },
                 "atmosphere": {
-                    "elevation": 1.05
+                    "elevation": 1.025
                 }
             }
         };
@@ -1341,8 +1331,11 @@
             // INIT Camera
             // --------------------------------------
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.25, 300000);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.15, 500000);
             camera.position.set(-1000, 500, -500);
+            cameraGroup = new THREE.Group();
+            cameraGroup.add(camera)
+            scene.add(cameraGroup);
 
             // INIT Renderer
             // --------------------------------------
@@ -1470,6 +1463,18 @@
                 particles[i].material.opacity = (Math.sin((i + framesCount) * 0.02)) + 1.35;
             }
 
+            /*
+            for (let i = 0; i < starColors.length / 3; ++i) {
+                const i3 = i * 3;
+                const value = (Math.sin(i + elapsedTime)) + 1.35;
+
+                stars.geometry.attributes.color[i3] = Math.abs(Math.sin(i + elapsedTime * 0.2));
+                stars.geometry.attributes.color[i3 + 1] = Math.abs(Math.sin(i + elapsedTime * 0.2));
+                stars.geometry.attributes.color[i3 + 2] = Math.abs(Math.sin(i + elapsedTime * 0.2));
+                stars.geometry.attributes.color.needsUpdate = true;
+            }
+             */
+
 
             /* Single Orbit Animation
              * ------------------------------ */
@@ -1539,7 +1544,7 @@
             controls.screenSpacePanning = true;
             controls.panSpeed = 0.5;
             controls.minDistance = 0;
-            controls.maxDistance = 450000;
+            controls.maxDistance = 4000000;
             controls.target.set(0, 0, 0);
             controls.update();
         }
@@ -1578,6 +1583,10 @@
                     bodyMaterial = new THREE.MeshBasicMaterial({map: bodyMap, color: o.body.color});
                 }
 
+                if (o.body.normalMap) {
+                    bodyMaterial.normalMap = loader.load(imageFolder + o.body.normalMap);
+                }
+
                 bodyGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
                 body = bodies[i]    = new THREE.Mesh(bodyGeometry, bodyMaterial);
 
@@ -1599,7 +1608,13 @@
 
                     // if has texture : add to material
                     if (o.atmosphere.map) {
-                        atmosphere.material.map = loader.load(imageFolder + o.atmosphere.map);
+                        atmosphere.material.color = new THREE.Color(0xbbbbbb);
+
+                        if (o.atmosphere.transparent) {
+                            atmosphere.material.alphaMap = loader.load(imageFolder + o.atmosphere.map);
+                        } else {
+                            atmosphere.material.map = loader.load(imageFolder + o.atmosphere.map);
+                        }
                     }
 
                     // if simulation mode is activated
@@ -1696,9 +1711,69 @@
         }
 
         // Todo try point material instead of particles
-        function sceneStars(isSprite = true, size = 24, length = 3200, minDistance = 80000, maxDistance = 320000) {
+        function sceneStars(isSprite = true, size = 24, length = 10000, minDistance = 85000, maxDistance = 400000) {
+            
+            // Init (based on points material)
+            /*
+            starsGeometry = new THREE.BufferGeometry();
+            starsMaterial = new THREE.PointsMaterial({
+                size,
+                sizeAttenuation: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+                map: new THREE.TextureLoader().load("img/star_sprite.svg"),
+                vertexColors: true
+            });
 
-            // Init
+            starPositions = new Float32Array(length * 3);
+            starColors = new Float32Array(length * 3);
+
+            let colorSpectrum1 = new THREE.Color(0xff6030);
+            let colorSpectrum2 = new THREE.Color(0x9cb1e2);
+            let colorSpectrum3 = new THREE.Color(0xffffff);
+
+            for (let i = 0; i < length; ++i) {
+                const i3 = i * 3;
+                const random = Math.random();
+                console.log(random)
+                
+                // Positions (distribute randomly in space between minDistance and maxDistance)
+                const x = i3
+                const y = i3 + 1;
+                const z = i3 + 2;
+                const theta = goldenAngle * i3;
+
+                 starPositions[x] = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2) * Math.sin(theta);
+                 starPositions[y] = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2) * Math.cos(theta);
+                 starPositions[z] = THREE.MathUtils.randFloat(minDistance, maxDistance) * THREE.MathUtils.randFloatSpread(2);
+
+                // At least one coordinate needs min-distance
+                if (random < 0.33) {
+                    starPositions[x] = (starPositions[x] < 0) ? starPositions[x] - minDistance : starPositions[x] + minDistance;
+                } else if (random < 0.66) {
+                    starPositions[y] = (starPositions[y] < 0) ? starPositions[y] - minDistance : starPositions[y] + minDistance;
+                } else {
+                    starPositions[z] = (starPositions[z] < 0) ? starPositions[z] - minDistance : starPositions[z] + minDistance;
+                }
+
+                // Colors
+                const colorSpectrum  = colorSpectrum1.clone();
+                colorSpectrum.lerp(colorSpectrum2, random);
+                colorSpectrum.lerp(colorSpectrum3, random + 0.33);
+
+                starColors[i3]      = colorSpectrum.r;
+                starColors[i3 + 1]  = colorSpectrum.g;
+                starColors[i3 + 2]  = colorSpectrum.b;
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+            starsGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+            stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+            */
+
+            // Init (based on individual spheres)
             geometry    = new THREE.SphereBufferGeometry(size, 8, 8);
             particleMap = new THREE.TextureLoader().load("img/star_sprite.svg");
 
@@ -1706,18 +1781,18 @@
 
             for (i; i < length; ++i) {
 
-                // Is sprite (better performance)
-                if (isSprite === true) {
-                    spriteMaterial = new THREE.SpriteMaterial({ map: particleMap });
-                    particle = particles[i] = new THREE.Sprite(spriteMaterial);
-                    particle.scale.set(85, 85, 85);
+                // Material
+                let colorSpectrum1 = new THREE.Color(0xff6030);
+                let colorSpectrum2 = new THREE.Color(0x9cb1e2);
+                let colorSpectrum3 = new THREE.Color(0xffffff);
 
-                // Is 3d stars
-                } else {
-                    material = new THREE.MeshBasicMaterial({ color: "hsl(0, 100%, 100%)" });
-                    particle = particles[i] = new THREE.Mesh(geometry, material);
-                    particle.material.transparent = true;
-                }
+                const colorSpectrum  = colorSpectrum1.clone();
+                colorSpectrum.lerp(colorSpectrum2, Math.random());
+                colorSpectrum.lerp(colorSpectrum3, Math.random() + 0.33);
+
+                spriteMaterial = new THREE.SpriteMaterial({ color: colorSpectrum, map: particleMap });
+                particle = particles[i] = new THREE.Sprite(spriteMaterial);
+                particle.scale.set(85, 85, 85);
 
                 // Distribute randomly with space in the middle
                 let theta = goldenAngle * i;
@@ -1749,19 +1824,14 @@
 
         // Lights
         function addLights() {
-            if (simulationMode === true) {
-                ambientLight = new THREE.AmbientLight(0xffffff, 0);
-                scene.add(ambientLight);
-            } else {
-                ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
-                scene.add(ambientLight);
-            }
+            ambientLight = new THREE.AmbientLight(0xffffff, 0);
+            scene.add(ambientLight);
 
-            pointLight = new THREE.PointLight(0xffffff, 0.66, 200000, 0.5);
+            pointLight = new THREE.PointLight(0xffffff, 0.85, 200000, 0.66);
             pointLight.position.set(0, 0, 0);
             pointLight.castShadow = true;
-            pointLight.shadow.mapSize.width = 2048;
-            pointLight.shadow.mapSize.height = 2048;
+            pointLight.shadow.mapSize.width = 1024;
+            pointLight.shadow.mapSize.height = 1024;
             scene.add(pointLight);
         }
 
@@ -1893,7 +1963,6 @@
     <script>
 
         $(document).ready(function() {
-
             const $body         = $('body');
 
             // Audioplayer
@@ -1990,19 +2059,21 @@
             });
 
             function generateAudio(autoplay) {
-                let randomSong = songs[Math.floor(Math.random() * songs.length)];
-                let name = randomSong.name;
-                let file = randomSong.file;
+                const songsCount = songs.length;
+                const songsIndex = Math.floor(Math.random() * songsCount);
+                const randomSong = songs[songsIndex];
+                const name = randomSong.name;
+                const file = randomSong.file;
                 let audioElement;
 
                 if (autoplay) {
                     audioElement = '<audio controls autoplay loop id="audio">' +
                         '<source src="' + file + '" type="audio/mpeg">' +
-                        '</audio>';
+                    '</audio>';
                 } else {
                     audioElement = '<audio controls loop id="audio">' +
                         '<source src="' + file + '" type="audio/mpeg">' +
-                        '</audio>';
+                    '</audio>';
                 }
 
                 // Remove old audio & append new
@@ -2090,11 +2161,10 @@
 
             // UI
             // ----------------------------------
-            const $hideUI   = $('.hide-ui');
             const $uiHolder = $('.ui-holder');
 
-            $hideUI.on('mouseenter', function() {
-                $uiHolder.toggleClass('hidden');
+            $(window).on('keydown', function() {
+                $uiHolder.toggleClass('hidden', false);
             });
 
 
@@ -2105,8 +2175,7 @@
             });
 
             function placeCursor(e) {
-                $cursor.css('top', e.pageY);
-                $cursor.css('left', e.pageX);
+                $cursor.css('transform', `translate(calc(${e.pageX}px - 50%), calc(${e.pageY}px - 50%))`);
                 $cursor.css('opacity', 1);
             }
 
