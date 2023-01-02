@@ -19,730 +19,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="img/favicons/solarsystem/favicon-16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="img/favicons/solarsystem/favicon-32.png">
     <link rel="icon" type="image/png" sizes="64x64" href="img/favicons/solarsystem/favicon-64.png">
-
-    <style>
-        @font-face {
-            font-family: 'Satoshi';
-            src: url('fonts/Satoshi-Variable.woff2') format('woff2'),
-            url('fonts/Satoshi-Variable.woff') format('woff'),
-            url('fonts/Satoshi-Variable.ttf') format('truetype');
-            font-weight: 300 900;
-            font-display: swap;
-            font-style: normal;
-        }
-
-        /* Tweakpane theme settings */
-        :root {
-            --tp-font-family: 'Inter', sans-serif;
-            --tp-base-border-radius: 4px;
-            --tp-container-horizontal-padding: 6px;
-            --tp-container-vertical-padding: 6px;
-            --tp-blade-spacing: 6px;
-            --tp-base-background-color: rgb(2 2 6);
-        }
-
-        * { user-select: none; }
-        body { margin: 0; background-color: #000; font-family: 'Inter', sans-serif; }
-        canvas { display: block; }
-        canvas:focus { outline: none; }
-        .story--holder {
-            position: relative;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #canvas-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 1;
-            transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
-            transition-delay: 0.25s;
-        }
-
-        .ui-holder {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
-            pointer-events: none;
-        }
-
-        .ui-holder > * {
-            pointer-events: initial;
-        }
-
-        .ui-holder.hidden {
-            opacity: 0;
-            transform: scale(1.4);
-        }
-
-        body.loaded .ui-holder {
-            animation: addUI 3s ease-in-out;
-            animation-delay: 3s;
-            animation-fill-mode: backwards;
-        }
-
-        @keyframes addUI {
-            0% {
-                opacity: 0;
-                transform: scale(1.4);
-            }
-            50% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        /* Controller
-         ----------------------------------- */
-
-        .controller {
-            position: absolute;
-            left: 70px;
-            bottom: 70px;
-            text-align: center;
-            animation: controller 2s both ease;
-            animation-delay: .5s;
-            animation-direction: normal;
-            animation-iteration-count: 1;
-        }
-
-        .controller .value {
-            display: inline-block;
-            width: auto;
-            margin: 10px 0 0;
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            font-weight: 200;
-            text-align: center;
-            outline: none;
-            border: none;
-            color: #ffffffdd;
-            text-shadow: 0 0 6px #ffffffaa;
-            background: none;
-        }
-
-        .controller input.value {
-            width: 60px;
-        }
-
-        .controller .title {
-            margin-top: 10px;
-            font-size: 13px;
-            font-weight: 300;
-            letter-spacing: 0.02em;
-            color: #ffffff77;
-        }
-
-        .controller label.title {
-            display: block;
-        }
-
-        .controller.days-passed {
-            left: 70px;
-        }
-        .controller.simulation-speed {
-            left: 200px;
-            padding-left: 46px;
-            border-left: 1px solid #fff3;
-        }
-
-        .controller.panel {
-            right: 70px;
-            top: 56px;
-            bottom: auto;
-            left: auto;
-        }
-
-        /* Tweakpane
-         ----------------------------------- */
-
-        .controller.panel .tp-rotv {
-            font-size: 12px;
-        }
-
-        .controller.panel .tp-lblv_v {
-            width: 20px;
-        }
-
-        /* Body information
-         ----------------------------------- */
-        .body-information {
-            font-family: 'Inter', sans-serif;
-        }
-
-        .body-information article {
-            position: absolute;
-            left: 70px;
-            top: 60px;
-            transition: all .5s ease;
-            opacity: 0;
-            transform: translateX(-30px);
-            pointer-events: none;
-            touch-action: none;
-        }
-
-        .body-information article.active {
-            opacity: 1;
-            transform: translateX(0);
-            pointer-events: initial;
-            touch-action: initial;
-        }
-
-        .body-information .title {
-            margin: 0 0 10px;
-            color: #ffffff;
-            text-shadow: 0 0 6px #ffffffaa;
-            font-size: 13px;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-        }
-
-        .body-information hr {
-            border-width: 1px 0 0;
-            border-color: #fff3;
-        }
-
-        .body-information dl {
-            display: grid;
-            grid-template-columns: 110px auto;
-            grid-gap: 3px;
-            margin-top: 10px;
-            font-size: 12px;
-            font-weight: 300;
-            letter-spacing: 0.02em;
-            color: #ffffff77;
-        }
-
-        .body-information dl dt,
-        .body-information dl dd {
-            display: inline-block;
-            margin: 0;
-        }
-
-        .body-information dl dt::after {
-            content: ":";
-        }
-
-
-        /* Navigation
-         ----------------------------------- */
-
-        .navigator-holder {
-            display: flex;
-            flex-wrap: wrap;
-            grid-column-gap: clamp(40px, 4vw, 80px);
-            grid-row-gap: 10px;
-            justify-content: center;
-            position: absolute;
-            top: 60px;
-            left: 50%;
-            animation: navigator 2s both ease;
-            animation-delay: .5s;
-            animation-direction: normal;
-            animation-iteration-count: 1;
-        }
-
-        .navigator {
-            display: flex;
-            gap: 14px;
-            align-items: center;
-            flex-direction: row-reverse;
-        }
-
-        .navigator ul {
-            display: flex;
-            gap: 10px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .navigator li {
-            position: relative;
-            width: 10px;
-            height: 10px;
-            border-radius: 10px;
-            border: 1px solid #ffffff33;
-            cursor: pointer;
-            transition: border .3s ease;
-        }
-
-        .navigator li::before {
-            display: block;
-            content: "";
-            width: 4px;
-            height: 4px;
-            position: absolute;
-            top: 3px;
-            left: 3px;
-            background-color: #fff;
-            border-radius: 10px;
-            transform: scale(.5);
-            opacity: 0;
-            transition: all .3s ease;
-        }
-
-        .navigator li::after {
-            display: inline-block;
-            font-family: 'Inter', sans-serif;
-            font-size: 10px;
-            font-weight: 400;
-            color: #ffffff55;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            opacity: 0;
-            transform-origin: left;
-            transform: translate(calc(-50% + 4px), 0);
-            transition: all .5s ease;
-            pointer-events: none;
-        }
-
-        .navigator li.active {
-            border-color: #ffffff55;
-        }
-
-        .navigator li:hover::before,
-        .navigator li.active::before {
-            transform: scale(1);
-            opacity: 1;
-        }
-
-        .navigator li:hover::after {
-            transform: translate(calc(-50% + 4px), 16px);
-            opacity: 1;
-        }
-
-        /* Body specifics */
-        .navigator li.sun::before           { background-color: #ffbc76; }
-        .navigator li.sun::after            { content: "Sun"; }
-
-        .navigator li.mercury::before       { background-color: #e3d9c7; }
-        .navigator li.mercury::after        { content: "Mercury"; }
-
-        .navigator li.venus::before         { background-color: #eac9b0; }
-        .navigator li.venus::after          { content: "Venus"; }
-
-        .navigator li.earth::before         { background-color: #5f9bd9; }
-        .navigator li.earth::after          { content: "Earth"; }
-
-        .navigator li.mars::before          { background-color: #dd965f; }
-        .navigator li.mars::after           { content: "Mars"; }
-
-        .navigator li.jupiter::before       { background-color: #e9c5a9; }
-        .navigator li.jupiter::after        { content: "Jupiter"; }
-
-        .navigator li.saturn::before        { background-color: #e0c092; }
-        .navigator li.saturn::after         { content: "Saturn"; }
-
-        .navigator li.uranus::before        { background-color: #b8f3fc; }
-        .navigator li.uranus::after         { content: "Uranus"; }
-
-        .navigator li.neptune::before       { background-color: #4289c6; }
-        .navigator li.neptune::after        { content: "Neptune"; }
-
-        .navigator li.pluto::before         { background-color: #947c6c; }
-        .navigator li.pluto::after          { content: "Pluto"; }
-
-        .navigator .legend {
-            font-size: 12px;
-            font-weight: 400;
-            color: #ffffff66;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-        }
-
-        @keyframes controller {
-            0% { opacity: 0; transform: translateY(30px); }
-            85% { opacity: 1; }
-            100% { transform: translateY(0); }
-        }
-
-        @keyframes navigator {
-            0% { opacity: 0; transform: translate(-50%, -100px); }
-            85% { opacity: 1; }
-            100% { transform: translate(-50%, 0); }
-        }
-
-        /* Navigation right changes
-         -----------------------------------
-
-        .navigator.right {
-            top: 30%;
-            left: auto;
-            right: 70px;
-            transform-origin: right center;
-            animation-name: navigatorRight;
-        }
-
-        .navigator.right li::after {
-            padding: 5px 30px 5px 5px;
-            transform: translate(5px, -75px) rotate(90deg);
-            text-align: right;
-        }
-        .navigator.right li:hover::after {
-            transform: translate(5px, -100px) rotate(90deg);
-        }
-
-        /* Audioplayer
-         ----------------------------------- */
-        #audio {
-            display: none;
-        }
-
-        .audio-player {
-            position: absolute;
-            right: 70px;
-            bottom: 70px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            animation: controller 2s both ease;
-            animation-delay: .5s;
-            animation-direction: normal;
-            animation-iteration-count: 1;
-        }
-
-        .audio-player .title--holder {
-            max-width: 15vw;
-            width: 200px;
-            margin: 0 10px 0 0;
-            text-align: left;
-            outline: none;
-            border: none;
-            overflow: hidden;
-            -webkit-mask: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(255,255,255,1) 10%, rgba(255,255,255,1) 90%, rgba(0,0,0,0) 100%);
-            mask: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(255,255,255,1) 10%, rgba(255,255,255,1) 90%, rgba(0,0,0,0) 100%);
-        }
-
-        .audio-player .title--holder > .title {
-            width: min-content;
-            padding: 0 10px;
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            font-weight: 200;
-            color: #ffffffdd;
-            text-shadow: 0 0 6px #ffffff66;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            overflow: hidden;
-            transform: translateX(calc(-100% - 30px));
-            animation-iteration-count: infinite;
-            animation-timing-function: linear;
-            animation-fill-mode: both;
-            animation-play-state: paused;
-            animation-delay: 0s;
-            animation-duration: 20s;
-            animation-direction: reverse;
-            animation-name: movingTitle;
-        }
-
-        .audio-player.sound-on .title--holder > .title {
-            animation-play-state: running;
-        }
-
-        .audio-player .play-pause,
-        .audio-player .shuffle {
-            width: 30px;
-            height: 30px;
-            margin-left: 10px;
-            padding: 8px;
-            border-radius: 4px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            gap: 4px;
-            transition: all .3s ease;
-        }
-
-        .audio-player .play-pause:hover,
-        .audio-player .shuffle:hover {
-            background-color: #ffffff09;
-        }
-
-        .audio-player .play-pause > .bar {
-            width: 2px;
-            height: 24px;
-            background-color: #fff;
-            transform-origin: center;
-            animation-iteration-count: infinite;
-            animation-timing-function: ease-in-out;
-            animation-fill-mode: forwards;
-            animation-play-state: paused;
-            animation-name: soundWave;
-        }
-
-        .audio-player .play-pause > .bar:nth-child(1) {
-            transform: scaleY(0.33);
-            animation-delay: 0.1s;
-            animation-duration: 4s;
-        }
-
-        .audio-player .play-pause > .bar:nth-child(2) {
-            transform: scaleY(0.7);
-            animation-delay: 0.2s;
-            animation-duration: 5s;
-        }
-
-        .audio-player .play-pause > .bar:nth-child(3) {
-            transform: scaleY(0.46);
-            animation-delay: 0.4s;
-            animation-duration: 6s;
-        }
-
-        .audio-player.sound-on .play-pause > .bar {
-            animation-play-state: running;
-        }
-
-        @keyframes soundWave {
-            0% { transform: scaleY(1); }
-            20% { transform: scaleY(.35); }
-            40% { transform: scaleY(.65); }
-            60% { transform: scaleY(.25); }
-            80% { transform: scaleY(.80); }
-            100% { transform: scaleY(1); }
-        }
-
-        .audio-player .shuffle img {
-            width: 26px;
-            height: 26px;
-            animation-duration: 0.5s;
-            animation-iteration-count: 1;
-            animation-timing-function: ease-in-out;
-            animation-fill-mode: both;
-        }
-
-        .audio-player .shuffle:hover img {
-            animation-name: rotatingShuffle;
-        }
-
-        @keyframes movingTitle {
-            0% { transform: translateX(calc(-100% - 30px)); }
-            100% { transform: translateX(calc(+100% + 30px)); }
-        }
-
-        @keyframes rotatingShuffle {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(180deg); }
-        }
-
-        /* Loading
-         ----------------------------------- */
-
-        #canvas-container {
-            transform: translateY(-25%);
-        }
-
-        #loader {
-            --border-color: #ffffff22;
-            --text-shadow-color: #ffffff66;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 100vh;
-            color: #ffffff55;
-            font-size: 14px;
-            font-weight: 400;
-            background: linear-gradient(220deg, rgb(0 0 0) 0%, rgb(11 14 28) 100%);
-            /* background: linear-gradient(220deg, rgb(0 0 0) 0%, rgb(11 14 28) 100%); */
-            background-color: rgb(2 4 14);
-            transition: all 2s cubic-bezier(0.67, 0.04, 0.18, 0.96);
-            overflow: hidden;
-            z-index: 100;
-        }
-
-        #loader .container {
-            text-align: center;
-            user-select: none;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
-            transition: all 1.5s cubic-bezier(0.67, 0.04, 0.18, 0.96);
-        }
-
-        #loader .loading-text {
-            font-family: 'Satoshi', 'Inter', sans-serif;
-            font-size: 7.5vmin;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-            color: #fff;
-            animation: textShadowPulse 8s cubic-bezier(0.67, 0.04, 0.18, 0.96) infinite alternate both;
-        }
-
-        #loader .loading-text-instructions-holder {
-            display: flex;
-            flex-wrap: wrap;
-            grid-gap: 10px;
-            margin-top: 40px;
-            padding: 0 40px;
-            max-width: 600px;
-        }
-
-        #loader .loading-text-instructions {
-            --padding-x: 22px;
-            --padding-y: 16px;
-            width: 100%;
-            padding: var(--padding-y) var(--padding-x);
-            text-align: left;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            line-height: 2;
-        }
-
-        #loader .loading-text-instructions p {
-            margin: 0;
-            line-height: 1.7;
-        }
-
-        #loader .loading-text-instructions hr {
-            border: 0;
-            border-top: 1px solid var(--border-color);
-            margin: var(--padding-y) calc(var(--padding-x) * -1);
-        }
-
-        #loader .loading-text-instructions dl {
-            display: grid;
-            grid-template-columns: 144px auto;
-            margin: 0;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        #loader .loading-text-eyebrow {
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        kbd {
-            font-family: 'Inter', sans-serif;
-            display: inline-block;
-            margin: 0 4px;
-            padding: 3px 8px;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            transform: translateY(-1px);
-            text-shadow: 0 0 1px #ffffff00;
-            transition: all .5s ease;
-        }
-
-        #loader #start {
-            font-size: 14px;
-            padding: 20px;
-            margin-top: 20px;
-            text-shadow: 0 0 1px #ffffff00;
-            transition: all .5s ease;
-            cursor: pointer;
-        }
-
-        #loader #start:hover {
-            text-shadow: 0 0 4px var(--text-shadow-color);
-            color: #fff;
-        }
-
-        kbd:hover,
-        #loader #start:hover kbd {
-            text-shadow: 0 0 4px var(--text-shadow-color);
-            color: #fff;
-            border-color: #ffffff99;
-        }
-
-        body.loaded #canvas-container {
-            transform: translateY(0);
-        }
-
-        body.loaded #loader {
-            height: 0;
-            pointer-events: none;
-        }
-
-        body.loaded #loader .container {
-            opacity: 0;
-        }
-
-        @keyframes textShadowPulse {
-            0%, 100% {
-                text-shadow: 0 0 3px #ffffff11;
-            }
-            50% {
-                text-shadow: 0 0 8px #ffffff55;
-            }
-        }
-
-
-        /* Cursor
-         ----------------------------------- */
-
-        #canvas-container * {
-            cursor: none;
-        }
-
-        #cursor {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 16px;
-            height: 16px;
-            padding: 5px;
-            border-radius: 40px;
-            border: 1px solid #fff2;
-            opacity: 0;
-            transform: translate(-50%, -50%);
-            transition: opacity 1s ease-in-out, padding .2s ease-in-out, border .2s ease-in-out;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        #cursor::before {
-            position: absolute;
-            content: "";
-            width: 2px;
-            height: 2px;
-            border-radius: 2px;
-            background-color: #fff7;
-            transition: background .2s ease-in-out;
-        }
-
-        #canvas-container:active #cursor {
-            padding: 10px;
-            border-color: transparent;
-        }
-
-        #canvas-container:active #cursor::before {
-            background: transparent;
-        }
-    </style>
+    <link rel="stylesheet" href="css/solarsystem.min.css">
 </head>
 <body>
-
     <div id="loader">
         <div class="container">
             <div class="loading-text-eyebrow">Welcome to the simulation</div>
@@ -1022,11 +301,8 @@
         // import * as THREE from './js/three.js';
         import { OrbitControls } from './js/OrbitControls.js';
 
-        // TODO add panel for customization
-        // TODO add camera group for better camera controls
-
         var container;
-        var camera, cameraGroup, scene, renderer, controls, loader;
+        var camera, scene, renderer, controls, loader;
         var mouse, raycaster;
         var framesCount = 0;
 
@@ -1056,8 +332,8 @@
         let snapshotTime = 0;
         let snapshotCameraPosition = new THREE.Vector3();
         let snapshotCameraRotation = new THREE.Vector3();
+        let previousTargetPosition = new THREE.Vector3();
         let storyTransition = false;
-        let attached = false;
         let locked = true;
         let loaded = false;
 
@@ -1095,7 +371,7 @@
         const urlParams = new URLSearchParams(queryString);
 
         const paramsOptions = {
-            highRes: urlParams.get('highRes')
+            highRes: urlParams.get('highRes') === 'true'
         }
 
         const pane = new Tweakpane.Pane({
@@ -1108,21 +384,62 @@
         const paneOptions = {
             showAtmosphere: true,
             showOrbits: false,
-            highRes: false,
+            highRes: paramsOptions.highRes,
             hideUI: false,
         }
 
-        pane.addInput(paneOptions, 'showAtmosphere', { label: 'Show Atmosphere' }).on('change', () => {
+        // Folders
+        const paneFolderSolarsystem = pane.addFolder({ title: 'Solarsystem' });
+        const paneFolderSimulationSpeed = pane.addFolder({ title: 'Simulation speed' });
+        const paneFolderUI = pane.addFolder({ title: 'UI' });
+
+        // Simulation
+        paneFolderSolarsystem.addInput(paneOptions, 'showAtmosphere', { label: 'Show Atmosphere' }).on('change', () => {
             atmospheres.forEach((atmosphere) => {
                 atmosphere.visible = paneOptions.showAtmosphere;
             });
         });
-        pane.addInput(paneOptions, 'showOrbits', { label: 'Show Orbits' }).on('change', () => {
+        paneFolderSolarsystem.addInput(paneOptions, 'showOrbits', { label: 'Show Orbits' }).on('change', () => {
             orbits.forEach((orbitGroup) => {
                 orbitGroup.children[0].visible = paneOptions.showOrbits;
             });
         });
-        pane.addInput(paneOptions, 'hideUI', { label: 'Hide UI (Press any key to show again)' }).on('change', () => {
+        paneFolderSolarsystem.addInput(paneOptions, 'highRes', { label: 'Use High-Res images (reloads)' }).on('change', () => {
+            if (paneOptions.highRes === false) {
+                window.location.href = window.location.origin + window.location.pathname;
+            } else {
+                window.location.href = window.location.origin + window.location.pathname + '?highRes=' + paneOptions.highRes;
+            }
+        });
+
+        // Simulation Speed
+        const paneSimulationSpeedRealTime = paneFolderSimulationSpeed.addButton({ title: 'Set to real-time' })
+        const paneSimulationSpeedOneDay = paneFolderSimulationSpeed.addButton({ title: '1 Second = 1 Day' })
+        const paneSimulationSpeedPause = paneFolderSimulationSpeed.addButton({ title: 'Pause' })
+        const paneSimulationSpeedReset = paneFolderSimulationSpeed.addButton({ title: 'Reset' })
+
+        paneSimulationSpeedRealTime.on('click', () => {
+            window.simulationSpeed = 0.0027;
+            document.querySelector('input#simulation-speed').value = window.simulationSpeed;
+        });
+        paneSimulationSpeedOneDay.on('click', () => {
+            window.simulationSpeed = 1.0;
+            document.querySelector('input#simulation-speed').value = window.simulationSpeed;
+        });
+        paneSimulationSpeedPause.on('click', () => {
+            window.simulationSpeed = 0.0;
+            document.querySelector('input#simulation-speed').value = window.simulationSpeed;
+        });
+        paneSimulationSpeedReset.on('click', () => {
+            window.simulationSpeed = 0.02;
+            document.querySelector('input#simulation-speed').value = window.simulationSpeed;
+        });
+
+        // UI
+        const paneHideUI = paneFolderUI.addButton({ title: 'Hide UI (Press any key to show again)' })
+
+        paneHideUI.on('click', () => {
+            paneOptions.hideUI = !paneOptions.hideUI;
             document.querySelector('.ui-holder').classList.toggle('hidden', paneOptions.hideUI);
         });
 
@@ -1334,10 +651,7 @@
             // --------------------------------------
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.15, 500000);
-            camera.position.set(-1000, 500, -500);
-            cameraGroup = new THREE.Group();
-            cameraGroup.add(camera)
-            scene.add(cameraGroup);
+            scene.add(camera);
 
             // INIT Renderer
             // --------------------------------------
@@ -1380,7 +694,6 @@
             window.addEventListener('resize', onWindowResize, false);
             window.addEventListener('mousemove', mouseVectoring, false);
             window.addEventListener('click', function() { intersectClick(bodies); }, false);
-            // window.addEventListener('dblclick', function() { intersectDblClick(bodies); }, false);
 
             // Grid
             // helperGrid();
@@ -1394,19 +707,13 @@
 
             // Attach Trigger
             document.addEventListener('navigatorAttach', function() {
-                attached = false;
                 storyTriggerRewrites();
-            }, false);
-
-            // Detach Trigger
-            document.addEventListener('navigatorDetachEvent', function() {
-                storyTransition = false;
-                attached = false;
             }, false);
 
             // Look At Trigger
             document.addEventListener('navigatorLookAt', function() {
                 locked = false;
+                controls.enableZoom = false;
                 storyTriggerRewrites();
             }, false);
 
@@ -1531,10 +838,10 @@
             if (storyTransition === true) {
                 bodies.forEach(function(body) {
                     if (body.name === window.simulationNavigate) {
-                        storyAnimateCameraPosition(body, snapshotTime, snapshotCameraPosition, 4);
+                        storyAnimateCameraPosition(body, snapshotTime, 4);
                     }
                     if (body.name === window.simulationLookAt) {
-                        storyAnimateCameraRotation(body, snapshotTime, snapshotCameraRotation, 4);
+                        storyAnimateCameraRotation(body, snapshotTime, 4);
                     }
                 });
             }
@@ -1713,7 +1020,6 @@
             scene.add(sunshine);
         }
 
-        // Todo try point material instead of particles
         function sceneStars(isSprite = true, size = 24, length = 10000, minDistance = 85000, maxDistance = 400000) {
             
             // Init (based on points material)
@@ -1875,6 +1181,7 @@
             // Get current status on trigger
             storyTransition = true;
             snapshotTime = elapsedTime;
+            previousTargetPosition = controls.target;
             snapshotCameraPosition.x = camera.position.x;
             snapshotCameraPosition.y = camera.position.y;
             snapshotCameraPosition.z = camera.position.z;
@@ -1883,11 +1190,10 @@
             snapshotCameraRotation.z = camera.rotation.z;
         }
 
-        function storyAnimateCameraPosition(target, snapshotTime, snapshotCameraPosition, duration) {
-            let current = camera.position;
+        function storyAnimateCameraPosition(target, snapshotTime, duration) {
+            let position = camera.position;
             let v = new THREE.Vector3();
             let t = target.getWorldPosition(v);
-            let s = snapshotCameraPosition;
             let r = target.geometry.parameters.radius;
 
             // Approach 0 to 1 with ease-in-out function in y frames
@@ -1895,70 +1201,79 @@
             let progress = easeInOut(x);
 
             // Define multiplications for elevated view of body
-            let multiplicator = new THREE.Vector3(2.5, 2.5, 5);
+            let multiplicator = new THREE.Vector3(2.5, 0, 5);
 
             // Get if position is positive or negative
             let elevation = new THREE.Vector3();
-            elevation.x = (current.x > 0) ? 1 : -1;
+            elevation.x = (position.x > 0) ? 1 : -1;
             elevation.y = 1;
-            elevation.z = (current.z > 0) ? -1 : 1;
+            elevation.z = (position.z > 0) ? -1 : 1;
 
             // Attach if progress is completed
-            if (attached === true) {
-                current.x = t.x + (elevation.x * r * multiplicator.x);
-                current.y = t.y + (elevation.y * r * multiplicator.y);
-                current.z = t.z + (elevation.z * r * multiplicator.z);
+            if (x >= 1) {
+                position.x = t.x + (elevation.x * r * multiplicator.x);
+                position.y = t.y + (elevation.y * r * multiplicator.y);
+                position.z = t.z + (elevation.z * r * multiplicator.z);
             } else {
-
-                // Set to "attached"
-                if (x >= 1) {
-                    attached = true;
-
-                // Slowly navigate to body
-                } else {
-                    current.x = s.x + ((t.x + (elevation.x * r * multiplicator.x) - s.x) * progress);
-                    current.y = s.y + ((t.y + (elevation.y * r * multiplicator.y) - s.y) * progress);
-                    current.z = s.z + ((t.z + (elevation.z * r * multiplicator.z) - s.z) * progress);
-                }
+                position.x = snapshotCameraPosition.x + ((t.x + (elevation.x * r * multiplicator.x) - snapshotCameraPosition.x) * progress);
+                position.y = snapshotCameraPosition.y + ((t.y + (elevation.y * r * multiplicator.y) - snapshotCameraPosition.y) * progress);
+                position.z = snapshotCameraPosition.z + ((t.z + (elevation.z * r * multiplicator.z) - snapshotCameraPosition.z) * progress);
             }
-
         }
 
-        function storyAnimateCameraRotation(target, snapshotTime, snapshotCameraRotation, duration) {
-            let current = camera.rotation;
+        function storyAnimateCameraRotation(target, snapshotTime, duration) {
+            let position = camera.position;
             let v = new THREE.Vector3();
             let t = target.getWorldPosition(v);
-            let s = snapshotCameraRotation;
+            let r = target.geometry.parameters.radius;
 
             // Approach 0 to 1 with ease-in-out function in y frames
             let x = (elapsedTime - snapshotTime) / duration;
             let progress = easeInOut(x);
 
+            // Define multiplications for elevated view of body
+            const multiplicator = new THREE.Vector3(2.5, 0, 5);
+
+            // Get if position is positive or negative
+            let elevation = new THREE.Vector3();
+            elevation.x = (position.x > 0) ? 1 : -1;
+            elevation.y = 1;
+            elevation.z = (position.z > 0) ? -1 : 1;
+
             // Lock if progress is completed
             if (locked === true) {
-                camera.lookAt(
-                    current.x = t.x,
-                    current.y = t.y,
-                    current.z = t.z
-                );
+                camera.lookAt(t);
+
+                // Always lock controls to fixated body
+                controls.enableZoom = true;
+                controls.target.set(t.x, t.y, t.z);
             } else {
 
                 // Set to "locked"
                 if (x >= 1) {
                     locked = true;
+                    controls.enableZoom = true;
 
                 // Slowly look at body
                 } else {
+
+                    // Camera Rotation
                     camera.lookAt(
-                        current.x = s.x + ((t.x - s.x) * progress),
-                        current.y = s.y + ((t.y - s.y) * progress),
-                        current.z = s.z + ((t.z - s.z) * progress)
+                        THREE.MathUtils.lerp(previousTargetPosition.x, t.x, progress),
+                        THREE.MathUtils.lerp(previousTargetPosition.y, t.y, progress),
+                        THREE.MathUtils.lerp(previousTargetPosition.z, t.z, progress),
                     );
+
+                    /* todo For manual positioning (optimize progress first because it stutters in combination with the lookAt function)
+                    // Camera Position
+                    if (window.simulationNavigate === '') {
+                        camera.position.x = snapshotCameraPosition.x + ((t.x + (elevation.x * r * multiplicator.x) - snapshotCameraPosition.x) * progress);
+                        camera.position.y = snapshotCameraPosition.y + ((t.y + (elevation.y * r * multiplicator.y) - snapshotCameraPosition.y) * progress);
+                        camera.position.z = snapshotCameraPosition.z + ((t.z + (elevation.z * r * multiplicator.z) - snapshotCameraPosition.z) * progress);
+                    }
+                     */
                 }
             }
-
-            // Lock controls to fixated body
-            controls.target.set(t.x, t.y, t.z);
         }
 
     </script>
@@ -2083,7 +1398,7 @@
                 $titleHolder.find('.title').text(name);
                 $body.find('audio').remove();
                 $body.append(audioElement);
-                document.getElementById('audio').volume = 0.0;
+                document.getElementById('audio').volume = 0.2;
             }
 
 
@@ -2119,7 +1434,7 @@
 
 
 
-            // Preload earth image (fairly large)
+            // Reveal scene when user clicks
             // ----------------------------------
 
             const renderedObjectsEvent = new Event('renderedObjects');
