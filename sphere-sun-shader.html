@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="img/favicon.ico">
+    <title>Custom Wave Shader</title>
+
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <script src="js/three.js"></script>
+
+    <!-- if local needed write glsl in here -->
+    <script type="x-shader/x-vertex" id="vertexShader">
+        precision mediump float;
+
+        varying vec2 vUv;
+        uniform float uTime;
+
+        //
+        // Description : Array and textureless GLSL 2D/3D/4D simplex
+        //               noise functions.
+        //      Author : Ian McEwan, Ashima Arts.
+        //  Maintainer : ijm
+        //     Lastmod : 20110822 (ijm)
+        //     License : Copyright (C) 2011 Ashima Arts. All rights reserved.
+        //               Distributed under the MIT License. See LICENSE file.
+        //               https://github.com/ashima/webgl-noise
+        //
+
+        vec3 mod289(vec3 x) {
+          return x - floor(x * (1.0 / 289.0)) * 289.0;
+        }
+
+        vec4 mod289(vec4 x) {
+          return x - floor(x * (1.0 / 289.0)) * 289.0;
+        }
+
+        vec4 permute(vec4 x) {
+             return mod289(((x*34.0)+1.0)*x);
+        }
+
+        vec4 taylorInvSqrt(vec4 r)
+        {
+          return 1.79284291400159 - 0.85373472095314 * r;
+        }
+
+        float snoise(vec3 v) {
+          const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+          const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+
+          // First corner
+          vec3 i  = floor(v + dot(v, C.yyy) );
+          vec3 x0 =   v - i + dot(i, C.xxx) ;
+
+          // Other corners
+          vec3 g = step(x0.yzx, x0.xyz);
+          vec3 l = 1.0 - g;
+          vec3 i1 = min( g.xyz, l.zxy );
+          vec3 i2 = max( g.xyz, l.zxy );
+
+          //   x0 = x0 - 0.0 + 0.0 * C.xxx;
+          //   x1 = x0 - i1  + 1.0 * C.xxx;
+          //   x2 = x0 - i2  + 2.0 * C.xxx;
+          //   x3 = x0 - 1.0 + 3.0 * C.xxx;
+          vec3 x1 = x0 - i1 + C.xxx;
+          vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
+          vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
+
+          // Permutations
+          i = mod289(i);
+          vec4 p = permute( permute( permute(
+                     i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                   + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                   + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+
+          // Gradients: 7x7 points over a square, mapped onto an octahedron.
+          // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
+          float n_ = 0.142857142857; // 1.0/7.0
+          vec3  ns = n_ * D.wyz - D.xzx;
+
+          vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
+
+          vec4 x_ = floor(j * ns.z);
+          vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+
+          vec4 x = x_ *ns.x + ns.yyyy;
+          vec4 y = y_ *ns.x + ns.yyyy;
+          vec4 h = 1.0 - abs(x) - abs(y);
+
+          vec4 b0 = vec4( x.xy, y.xy );
+          vec4 b1 = vec4( x.zw, y.zw );
+
+          //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
+          //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
+          vec4 s0 = floor(b0)*2.0 + 1.0;
+          vec4 s1 = floor(b1)*2.0 + 1.0;
+          vec4 sh = -step(h, vec4(0.0));
+
+          vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+          vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+
+          vec3 p0 = vec3(a0.xy,h.x);
+          vec3 p1 = vec3(a0.zw,h.y);
+          vec3 p2 = vec3(a1.xy,h.z);
+          vec3 p3 = vec3(a1.zw,h.w);
+
+          // Normalise gradients
+          vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+          p0 *= norm.x;
+          p1 *= norm.y;
+          p2 *= norm.z;
+          p3 *= norm.w;
+
+          // Mix final noise value
+          vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+          m = m * m;
+          return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                        dot(p2,x2), dot(p3,x3) ) );
+        }
+
+        void main() {
+          vUv = uv;
+
+          vec3 pos = position;
+          float noiseFreq = 1.5;
+          float noiseAmp = 0.05;
+          vec3 noisePos = vec3(pos.x * noiseFreq + uTime, pos.y, pos.z);
+          pos.z += snoise(noisePos) * noiseAmp;
+
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.);
+        }
+    </script>
+
+    <!-- if local needed write glsl in here -->
+    <!--
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        precision mediump float;
+
+        uniform float uTime;
+        uniform vec2 mouse;
+        uniform vec2 resolution;
+
+        void main( void ) {
+
+            vec2 position = gl_FragCoord.xy / resolution.xy;
+
+            float color = 0.0;
+            color += 20.0 * sin( position.x * cos( uTime / 15.0 ) * 80.0 * -mouse.x / 2.0 ) + cos( position.y * cos( uTime / 10.0 ) * 10.0 );
+            color *= sin( position.y * sin( uTime / 2.0 ) * 40.0 * mouse.y / 2.0) + cos( position.x * sin( uTime / 20.0 ) * 40.0 );
+            color *= sin( position.x * sin( uTime / 5.0 ) * 10.0 ) + sin( position.y * sin( uTime / 15.0 ) * 80.0 );
+            color *= sin( uTime / 10.0 ) * 0.5;
+
+            gl_FragColor = vec4( vec3( color, color * 0.2, sin( color + uTime / 1.0 ) * 0.75 ), 1.0 );
+        }
+    </script>
+    -->
+
+    <!-- if local needed write glsl in here -->
+    <!--
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        precision mediump float;
+
+        uniform float uTime;
+        uniform vec2 mouse;
+        uniform vec2 resolution;
+
+        void main( void ) {
+
+            vec2 position = gl_FragCoord.xy / resolution.xy;
+
+            float color = 0.0;
+            color += 20.0 * sin( position.x * cos( uTime / 15.0 ) * 80.0 * -mouse.x / 2.0 ) + cos( position.y * cos( uTime / 10.0 ) * 10.0 );
+            color *= sin( position.y * sin( uTime / 2.0 ) * 40.0 * mouse.y / 2.0) + cos( position.x * sin( uTime / 20.0 ) * 40.0 );
+            color *= sin( position.x * sin( uTime / 5.0 ) * 10.0 ) + sin( position.y * sin( uTime / 15.0 ) * 80.0 );
+            color *= sin( uTime / 10.0 ) * 0.5;
+
+            gl_FragColor = vec4( vec3( color, color * 0.2, sin( color + uTime / 1.0 ) * 0.75 ), 1.0 );
+        }
+    </script>
+    -->
+
+    <!-- if local needed write glsl in here -->
+    <script type="x-shader/x-fragment" id="fragmentShader">
+    /*
+        precision mediump float;
+        uniform float uTime;
+        uniform vec2 resolution;
+
+        void main( void ) {
+
+            float x = gl_FragCoord.x / resolution.x * sin(uTime);
+            float y = gl_FragCoord.y / resolution.y * cos(uTime);
+
+            gl_FragColor = vec4(1, y, x * y, 1);
+        }
+        */
+
+        varying vec2 vUv;
+        uniform sampler2D uTexture;
+
+        void main() {
+            vec3 texture = texture2D(uTexture, vUv).rgb;
+            gl_FragColor = vec4(texture, 1.);
+        }
+    </script>
+
+    <!--
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        uniform vec3 u_lightPosition;
+        uniform vec3 u_lightColor;
+        uniform vec3 u_ambientColor;
+
+        in vec3 v_normal;
+        in vec3 v_position;
+
+        out vec4 fragColor;
+
+        void main() {
+            // Calculate the diffuse lighting term
+            vec3 normal = normalize(v_normal);
+            vec3 lightDir = normalize(u_lightPosition - v_position);
+            float diffuse = max(dot(normal, lightDir), 0.0);
+
+            // Calculate the specular lighting term
+            vec3 viewDir = normalize(-v_position);
+            vec3 reflectDir = reflect(-lightDir, normal);
+            float specular = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+
+            // Calculate the final color
+            vec3 diffuseColor = u_lightColor * diffuse;
+            vec3 specularColor = u_lightColor * specular;
+            vec3 ambientColor = u_ambientColor;
+
+            fragColor = vec4(diffuseColor + specularColor + ambientColor, 1.0);
+        }
+    </script>
+    -->
+
+    <script type="module">
+
+        // import * as THREE from './js/three.js';
+        import { OrbitControls } from './js/OrbitControls.js';
+        // import vertexShader from './js/glsl/wave-vertex.glsl';
+        // import fragmentShader from './js/glsl/wave-fragment.glsl';
+
+        var container;
+        var camera, scene, renderer, controls, clock;
+        var mouse, raycaster;
+        var framesCount = 0;
+
+        var lightHelper, ambientLight, pointLight, directionalLight, hemisphereLight, cameraLight;
+
+        var localGroup, localObjs;
+        var sphereGeometry, sphereShaderMaterial, sphere;
+
+        init();
+        sceneAnimation();
+
+        // Initiating Scene
+        function init() {
+
+            // INIT Scene
+            // --------------------------------------
+
+            scene = new THREE.Scene();
+
+            // INIT Camera
+            // --------------------------------------
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0, 5);
+            camera.rotation.set(0, 0, 0);
+
+            // INIT Renderer
+            // --------------------------------------
+
+            clock = new THREE.Clock();
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            container = document.getElementById('canvas-container');
+            container.appendChild( renderer.domElement );
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // INIT Options
+            // --------------------------------------
+
+            // Lights
+            addLights();
+
+            // Controls
+            addControls();
+
+            // Create box
+            scenePlane();
+
+            // Create group
+            localObjs = [sphere];
+            sceneGroup(localGroup, localObjs);
+
+            window.addEventListener('mousemove', mouseVectoring, false);
+
+            // Update renderer and camera when resizing
+            window.addEventListener('resize', onWindowResize, false);
+
+            // INIT Helper
+            // --------------------------------------
+
+            // Grid
+            // helperGrid();
+
+            // Lights Helper
+            // helperLight();
+        }
+
+
+        // Rendering the scene
+        function sceneAnimation() {
+            requestAnimationFrame(sceneAnimation);
+
+            // Animation
+            framesCount++;
+            sphere.material.uniforms.uTime.value = clock.getElapsedTime();
+
+            renderer.render(scene, camera);
+        }
+
+        function addLights(ambientColor = 0xffa0f0, directionalColor = 0x189EFF) {
+            ambientLight = new THREE.AmbientLight(ambientColor, 0.2);
+            scene.add(ambientLight);
+
+            pointLight = new THREE.PointLight(ambientColor, 1, 0, 1);
+            pointLight.position.set(0, 2, 0);
+            scene.add(pointLight);
+
+            cameraLight = new THREE.PointLight(ambientColor, 0.6, 0, 1);
+            cameraLight.position.set(8, 8, 8);
+            cameraLight.rotation.set(-45, 35, 30);
+            scene.add(cameraLight);
+
+            hemisphereLight = new THREE.HemisphereLight(0xffa050, 0xf2beb7, 1);
+            scene.add(hemisphereLight);
+
+            directionalLight = new THREE.DirectionalLight(directionalColor, 2, 100);
+            directionalLight.position.set(0, 4, 0);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+        }
+
+        function lightCameraSync(light = cameraLight) {
+            light.position.x = camera.position.x;
+            light.position.y = camera.position.y;
+            light.position.z = camera.position.z;
+            light.rotation.x = camera.rotation.x;
+            light.rotation.y = camera.rotation.y;
+            light.rotation.z = camera.rotation.z;
+        }
+
+        function addControls() {
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.screenSpacePanning = true;
+            controls.minDistance = 1;
+            controls.maxDistance = 80;
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        function scenePlane() {
+            sphereGeometry   = new THREE.SphereBufferGeometry(1, 64, 64);
+            sphereShaderMaterial = new THREE.ShaderMaterial({
+                vertexShader: document.getElementById('vertexShader').textContent, // if local needed
+                fragmentShader: document.getElementById('fragmentShader').textContent, // if local needed
+                uniforms: {
+                    uTime: { value: 0.0 },
+                    mouse: { value: new THREE.Vector2(0.0, 0.0) },
+                    resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                    u_lightPosition: { value: new THREE.Vector3(1.0, 2.0, 3.0) },
+                    u_lightColor: { value: new THREE.Color(1.0, 1.0, 1.0) },
+                    u_ambientColor: { value: new THREE.Color(0.2, 0.2, 0.2) },
+                    uTexture: { value: new THREE.TextureLoader().load('img/highres-compressed/sun.jpg') }
+                },
+                wireframe: false,
+                side: THREE.DoubleSide
+            });
+            // sphereMaterial   = new THREE.MeshPhysicalMaterial( {color: 0x52504c, side: THREE.DoubleSide} );
+            sphere = new THREE.Mesh(sphereGeometry, sphereShaderMaterial);
+
+            sphere.castShadow = false;
+            sphere.receiveShadow = true;
+
+            sphere.position.y = 0;
+
+            console.log(sphere)
+
+            scene.add(sphere);
+        }
+
+        function sceneGroup(group, objs) {
+            group = localGroup = new THREE.Group();
+
+            objs.forEach(function(obj) {
+                group.add(obj);
+            });
+
+            scene.add(group);
+        }
+
+        function sin(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.sin((Math.PI / 2) * (x * speed)) * radius) + center;
+        }
+
+        function cos(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.cos((Math.PI / 2) * (x * speed)) * radius) + center;
+        }
+
+
+        // Raycasting (find intersecting elements)
+        function mouseVectoring(e) {
+            // calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function rayCastingObjs(objs) {
+            raycaster.setFromCamera(mouse, camera);
+
+            return raycaster.intersectObjects(objs);
+        }
+
+        function intersectHover(objs) {
+            var intersects = rayCastingObjs(objs);
+
+            if (intersects.length > 0) {
+                intersectHoverTrue(intersects);
+            } else {
+                intersectHoverFalse(objs);
+            }
+        }
+
+        function intersectHoverTrue(objs) {
+            objs[0].object.material.color.set(0xFF0000);
+            console.log(objs[0].object.name);
+        }
+
+        function intersectHoverFalse(objs) {
+            objs.forEach(function(obj) {
+                obj.material.color.set(0xC7C7C7);
+            });
+        }
+
+        function intersectClick(objs) {
+            var intersects = rayCastingObjs(objs);
+
+            if (intersects.length > 0) {
+                alert(intersects[0].object.name);
+            }
+        }
+
+
+        // Helpers
+        function helperGrid() {
+            var grid = new THREE.GridHelper(0, 0);
+            scene.add(grid);
+        }
+
+        function helperLight(light = directionalLight, size = 1, color = '#ffffff') {
+            if (light.type === 'DirectionalLight') {
+                lightHelper = new THREE.DirectionalLightHelper(light, size, color);
+            }
+
+            if (light.type === 'PointLight') {
+                lightHelper = new THREE.PointLightHelper(light, size, color);
+            }
+
+            if (light.type === 'SpotLight') {
+                lightHelper = new THREE.SpotLightHelper(light, size, color);
+            }
+
+            if (light.type === 'HemisphereLight') {
+                lightHelper = new THREE.HemisphereLightHelper(light, size, color);
+            }
+
+            scene.add(lightHelper);
+        }
+
+        // Camera
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+    </script>
+
+</body>
+</html>

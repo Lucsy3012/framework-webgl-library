@@ -404,7 +404,7 @@
                 orbitGroup.children[0].visible = paneOptions.showOrbits;
             });
         });
-        paneFolderSolarsystem.addInput(paneOptions, 'highRes', { label: 'Use High-Res images (reloads)' }).on('change', () => {
+        paneFolderSolarsystem.addInput(paneOptions, 'highRes', { label: 'High-Res images (reloads)' }).on('change', () => {
             if (paneOptions.highRes === false) {
                 window.location.href = window.location.origin + window.location.pathname;
             } else {
@@ -478,7 +478,8 @@
                     "rotationSpeed": 0.017,
                     "tilt": 0.034,
                     "color": "#e3d9c7",
-                    "map": "mercury.jpg"
+                    "map": "mercury.jpg",
+                    "normalMap": "mercury-normal.jpg"
                 },
                 "atmosphere": false
             },
@@ -493,14 +494,15 @@
                     "rotationSpeed": 0.004,
                     "tilt": 177.36,
                     "color": "#eac9b0",
-                    "map": "venus.jpg"
+                    "map": "venus.jpg",
+                    "normalMap": "venus-normal.jpg"
                 },
                 "atmosphere": {
                     "elevation": 1.025,
                     "opacity": 0.9,
                     "blending": 1,
                     "rotationMultiplicator": 120,
-                    "map": "venus_atmosphere.jpg"
+                    "map": "venus-atmosphere.jpg"
                 }
             },
             "earth": {
@@ -515,14 +517,14 @@
                     "tilt": 23.44,
                     "color": "#5f9bd9",
                     "map": "earth.jpg",
-                    "normalMap": "earth_normal.jpg",
+                    "normalMap": "earth-normal.jpg",
                 },
                 "atmosphere": {
                     "elevation": 1.0125,
                     "opacity": 1,
                     "blending": 2,
                     "rotationMultiplicator": 1.075,
-                    "map": "earth_atmosphere.jpg",
+                    "map": "earth-atmosphere.jpg",
                     "transparent": true
                 }
             },
@@ -537,7 +539,8 @@
                     "rotationSpeed": 0.999,
                     "tilt": 25.19,
                     "color": "#dd965f",
-                    "map": "mars.jpg"
+                    "map": "mars.jpg",
+                    "normalMap": "mars-normal.jpg"
                 },
                 "atmosphere": {
                     "elevation": 1.0125
@@ -628,7 +631,8 @@
                     "rotationSpeed": 0.166,
                     "tilt": 122.53,
                     "color": "#947c6c",
-                    "map": "pluto.jpg"
+                    "map": "pluto.jpg",
+                    "normalMap": "pluto-normal.jpg"
                 },
                 "atmosphere": {
                     "elevation": 1.025
@@ -874,7 +878,7 @@
                 const key = Object.keys(s)[i];
                 const o   = s[key];
                 const distance = o.body.distance * AE * km / scale;
-                const imageFolder = (simulationMode === true && paramsOptions.highRes === "true") ? 'img/highres/' : 'img/highres-compressed/';
+                const imageFolder = (simulationMode === true && paramsOptions.highRes.toString() === "true") ? 'img/highres/' : 'img/highres-compressed/';
                 const bodyMap = loader.load(imageFolder + o.body.map);
 
                 // Update Mipmapping Filter for crisp images
@@ -888,13 +892,17 @@
                 /* Create body
                  * ------------------------------ */
                 if (key !== 'sun') {
-                    bodyMaterial = new THREE.MeshLambertMaterial({map: bodyMap, color: o.body.color});
+                    bodyMaterial = new THREE.MeshPhongMaterial({map: bodyMap, color: o.body.color});
+                    bodyMaterial.shininess = 0;
                 } else {
                     bodyMaterial = new THREE.MeshBasicMaterial({map: bodyMap, color: o.body.color});
                 }
 
-                if (o.body.normalMap) {
+                // Add normal map if available
+                if (o.body.normalMap && paramsOptions.highRes.toString() === "true") {
                     bodyMaterial.normalMap = loader.load(imageFolder + o.body.normalMap);
+                    bodyMaterial.normalScale = new THREE.Vector2(0.2, 0.2);
+                    bodyMaterial.needsUpdate = true
                 }
 
                 bodyGeometry        = new THREE.SphereBufferGeometry(o.body.radius * km, 64, 64);
