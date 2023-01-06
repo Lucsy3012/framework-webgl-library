@@ -120,7 +120,7 @@ body.loaded .ui-holder {
   background: none;
 }
 .controller input.value {
-  width: 60px;
+  width: 70px;
 }
 .controller .title {
   margin-top: 10px;
@@ -151,8 +151,8 @@ body.loaded .ui-holder {
 .controller.panel .tp-rotv {
   font-size: 12px;
 }
-.controller.panel .tp-lblv_v {
-  width: 20px;
+.controller.panel .tp-ckbv_w {
+  margin-left: auto;
 }
 .controller.panel .tp-p2dv_b,
 .controller.panel .tp-btnv_b,

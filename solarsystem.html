@@ -386,6 +386,7 @@
             showOrbits: false,
             highRes: paramsOptions.highRes,
             hideUI: false,
+            toneMappingExposure: 1.1,
         }
 
         // Folders
@@ -410,6 +411,10 @@
             } else {
                 window.location.href = window.location.origin + window.location.pathname + '?highRes=' + paneOptions.highRes;
             }
+        });
+        paneFolderSolarsystem.addInput(paneOptions, 'toneMappingExposure', { label: 'Tone Mapping Exposure', min: 0.75, max: 1.4 }).on('change', () => {
+            renderer.toneMappingExposure = paneOptions.toneMappingExposure;
+            renderer.render(scene, camera);
         });
 
         // Simulation Speed
@@ -665,6 +670,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = paneOptions.toneMappingExposure;
 
             container = document.getElementById('canvas-container');
             container.appendChild(renderer.domElement);
@@ -1258,9 +1265,9 @@
             } else {
 
                 // Set to "locked"
-                if (x >= 1) {
+                if (x >= 0.66) {
                     locked = true;
-                    controls.enableZoom = true;
+                    controls.enableZoom = true
 
                 // Slowly look at body
                 } else {
