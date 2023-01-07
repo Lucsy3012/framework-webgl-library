@@ -75,6 +75,9 @@ canvas:focus {
   opacity: 0;
   transform: scale(1.4);
 }
+.ui-holder.hidden > * {
+  pointer-events: none;
+}
 body.loaded .ui-holder {
   animation: addUI 3s ease-in-out;
   animation-delay: 3s;

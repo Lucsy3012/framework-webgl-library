@@ -71,6 +71,10 @@ canvas:focus { outline: none; }
 .ui-holder.hidden {
   opacity: 0;
   transform: scale(1.4);
+
+  > * {
+    pointer-events: none;
+  }
 }
 
 body.loaded .ui-holder {
