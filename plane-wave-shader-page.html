@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="img/favicon.ico">
+    <title>Custom Wave Shader</title>
+
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <script src="js/three.js"></script>
+
+    <!-- if local needed write glsl in here -->
+    <script type="x-shader/x-vertex" id="vertexShader">
+        precision mediump float;
+
+        varying vec2 vUv;
+        uniform float uTime;
+        uniform vec2 uMouse;
+
+        void main() {
+          vUv = uv;
+
+          vec3 pos = position;
+          // vec3 random = fract(position * 42389217.42315) * sin(uTime);
+          // float random = (position.x + position.y) * position.z * sin(uTime);
+          // float random = (position.x + position.y + position.z) * position.z * abs(sin(uTime));
+          float waveZ = sin(uTime + position.x * position.y) * 0.25;
+          float pageZ = pow(pos.x + pos.y + uMouse.x, 2.) * sin(uTime);
+
+          /*
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(
+            pos.x + waveZ,
+            pos.y,
+            pos.z,
+            1.
+          );
+          */
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(
+            pos.x,
+            pos.y,
+            // pos.z * ((pos.x + 1.) * sin(pos.x + uTime)),
+            // sin((pos.x * 5. + pos.y * 5.) + (uTime * 2.)) / 10.,
+            pos.z + sin((pos.x * 15. + pos.y * 15.) + (uTime * 2.)) / 50.,
+            // pos.z,
+            1.
+          );
+        }
+    </script>
+
+    <!-- if local needed write glsl in here -->
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        precision mediump float;
+
+        varying vec2 vUv; // vertex uv
+        uniform float uTime;
+        uniform vec2 uMouse;
+        uniform vec2 uResolution;
+        uniform sampler2D uTexture;
+        varying vec4 v_color;
+
+        void main() {
+            vec2 st = gl_FragCoord.xy;
+            vec2 random = fract(vUv * 42389217.42315) * uTime;
+
+            // vec3 color = vec3(vUv.x, sin(vUv.y), 1.0);
+            // vec3 color = vec3(vUv.x, 0.0, 0.0); // from black to red based on vertex
+            vec3 color = vec3(vUv.x, 0.0, vUv.y); // from black to red based on vertex
+            gl_FragColor = vec4(color, 1.);
+        }
+
+        /* rgb shift
+        void main() {
+            vec2 uv = vUv;
+            vec3 texture = texture2D(uTexture, vUv).rgb;
+
+            float red = texture2D(texture, vec2(uv.x, uv.y - .1)).r;
+            float green = texture2D(texture, uv).g;
+            float blue = texture2D(texture, vec2(uv.x, uv.y + .1)).b;
+            float alpha = texture2D(texture, uv).a;
+
+            gl_FragColor = vec4(vec3(red, green, blue), alpha);
+        }
+        */
+
+        /*
+        void main() {
+          vec3 texture = texture2D(uTexture, vUv).rgb;
+          gl_FragColor = vec4(texture, 1.);
+        }
+        */
+
+        /*
+        #define t uTime
+        #define r uResolution.xy
+
+        void main( out vec4 fragColor, in vec2 fragCoord ){
+            vec3 c;
+            float l,z=t;
+            for(int i=0;i<3;i++) {
+                vec2 uv,p=fragCoord.xy/r;
+                uv=p;
+                p-=.5;
+                p.x*=r.x/r.y;
+                z+=.07;
+                l=length(p);
+                uv+=p/l*(sin(z)+1.)*abs(sin(l*9.-z-z));
+                c[i]=.01/length(mod(uv,1.)-.5);
+            }
+            fragColor=vec4(c/l,t);
+        }
+        */
+    </script>
+
+    <script type="module">
+
+        // import * as THREE from './js/three.js';
+        import { OrbitControls } from './js/OrbitControls.js';
+        // import vertexShader from './js/glsl/wave-vertex.glsl';
+        // import fragmentShader from './js/glsl/wave-fragment.glsl';
+        // import img from './img/shiba-inu-chemistry.png';
+
+        var container;
+        var camera, scene, renderer, controls, clock;
+        var mouse, raycaster;
+        var framesCount = 0;
+
+        var lightHelper, ambientLight, pointLight, directionalLight, hemisphereLight, cameraLight;
+
+        var localGroup, localObjs;
+        var planeGeometry, planeShaderMaterial, plane;
+
+        let uniforms = {
+            uTime: { type: 'float', value: 0.0 },
+            uResolution: { type: 'v2', value: new THREE.Vector2() },
+            uMouse: { type: 'v2', value: new THREE.Vector2() },
+        }
+
+        init();
+        sceneAnimation();
+
+        // Initiating Scene
+        function init() {
+
+            // INIT Scene
+            // --------------------------------------
+
+            scene = new THREE.Scene();
+
+            // INIT Camera
+            // --------------------------------------
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0, 3);
+            camera.rotation.set(0, 0, 0);
+
+            // INIT Renderer
+            // --------------------------------------
+
+            clock = new THREE.Clock();
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            container = document.getElementById('canvas-container');
+            container.appendChild( renderer.domElement );
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // INIT Options
+            // --------------------------------------
+
+            // Lights
+            addLights();
+
+            // Controls
+            addControls();
+
+            // Create box
+            scenePlane();
+
+            // Create group
+            localObjs = [plane];
+            sceneGroup(localGroup, localObjs);
+
+            window.addEventListener('mousemove', mouseVectoring, false);
+
+            // Update renderer and camera when resizing
+            window.addEventListener('resize', onWindowResize, false);
+
+            // INIT Helper
+            // --------------------------------------
+
+            // Grid
+            helperGrid();
+
+            // Lights Helper
+            // helperLight();
+        }
+
+
+        // Rendering the scene
+        function sceneAnimation() {
+            requestAnimationFrame(sceneAnimation);
+
+            // Animation
+            framesCount++;
+            plane.material.uniforms.uTime.value = clock.getElapsedTime();
+
+            renderer.render(scene, camera);
+        }
+
+        function addLights(ambientColor = 0xffa0f0, directionalColor = 0x189EFF) {
+            ambientLight = new THREE.AmbientLight(ambientColor, 0.2);
+            scene.add(ambientLight);
+
+            pointLight = new THREE.PointLight(ambientColor, 1, 0, 1);
+            pointLight.position.set(0, 2, 0);
+            scene.add(pointLight);
+
+            cameraLight = new THREE.PointLight(ambientColor, 0.6, 0, 1);
+            cameraLight.position.set(8, 8, 8);
+            cameraLight.rotation.set(-45, 35, 30);
+            scene.add(cameraLight);
+
+            hemisphereLight = new THREE.HemisphereLight(0xffa050, 0xf2beb7, 1);
+            scene.add(hemisphereLight);
+
+            directionalLight = new THREE.DirectionalLight(directionalColor, 2, 100);
+            directionalLight.position.set(0, 4, 0);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+        }
+
+        function lightCameraSync(light = cameraLight) {
+            light.position.x = camera.position.x;
+            light.position.y = camera.position.y;
+            light.position.z = camera.position.z;
+            light.rotation.x = camera.rotation.x;
+            light.rotation.y = camera.rotation.y;
+            light.rotation.z = camera.rotation.z;
+        }
+
+        function addControls() {
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.screenSpacePanning = true;
+            controls.minDistance = 1;
+            controls.maxDistance = 80;
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        function scenePlane() {
+            planeGeometry   = new THREE.PlaneBufferGeometry(0.8, 0.6, 64, 64);
+            // planeGeometry   = new THREE.BoxBufferGeometry(1, 1, 1, 64, 64, 64);
+            // planeGeometry   = new THREE.SphereBufferGeometry(1, 64, 64);
+            planeShaderMaterial = new THREE.ShaderMaterial({
+                vertexShader: document.getElementById('vertexShader').textContent, // if local needed
+                fragmentShader: document.getElementById('fragmentShader').textContent, // if local needed
+                // vertexShader,
+                // fragmentShader,
+                uniforms: {
+                    uTime: { value: 0.0 },
+                    uMouse: uniforms.uMouse,
+                    uResolution: uniforms.uResolution,
+                    uTexture: { value: new THREE.TextureLoader().load('img/shiba-inu-chemistry.png') }
+                },
+                wireframe: true,
+                side: THREE.DoubleSide
+            });
+            // planeMaterial   = new THREE.MeshPhysicalMaterial( {color: 0x52504c, side: THREE.DoubleSide} );
+            plane           = new THREE.Mesh(planeGeometry, planeShaderMaterial);
+
+            plane.castShadow = false;
+            plane.receiveShadow = true;
+
+            plane.scale.set(2, 2, 2);
+
+            plane.position.y = 0;
+
+            scene.add(plane);
+        }
+
+        function sceneGroup(group, objs) {
+            group = localGroup = new THREE.Group();
+
+            objs.forEach(function(obj) {
+                group.add(obj);
+            });
+
+            scene.add(group);
+        }
+
+        function sin(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.sin((Math.PI / 2) * (x * speed)) * radius) + center;
+        }
+
+        function cos(x, speed = 0.001, radius = 1, center = 0) {
+            return (Math.cos((Math.PI / 2) * (x * speed)) * radius) + center;
+        }
+
+
+        // Raycasting (find intersecting elements)
+        function mouseVectoring(e) {
+            // calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
+
+            // Add mouse to uniform
+            uniforms.uMouse.value.x = mouse.x;
+            uniforms.uMouse.value.y = mouse.y;
+            console.log(uniforms.uMouse.x)
+        }
+
+        function rayCastingObjs(objs) {
+            raycaster.setFromCamera(mouse, camera);
+
+            return raycaster.intersectObjects(objs);
+        }
+
+        function intersectHover(objs) {
+            var intersects = rayCastingObjs(objs);
+
+            if (intersects.length > 0) {
+                intersectHoverTrue(intersects);
+            } else {
+                intersectHoverFalse(objs);
+            }
+        }
+
+        function intersectHoverTrue(objs) {
+            objs[0].object.material.color.set(0xFF0000);
+            console.log(objs[0].object.name);
+        }
+
+        function intersectHoverFalse(objs) {
+            objs.forEach(function(obj) {
+                obj.material.color.set(0xC7C7C7);
+            });
+        }
+
+        function intersectClick(objs) {
+            var intersects = rayCastingObjs(objs);
+
+            if (intersects.length > 0) {
+                alert(intersects[0].object.name);
+            }
+        }
+
+
+        // Helpers
+        function helperGrid() {
+            var grid = new THREE.GridHelper(0, 0);
+            scene.add(grid);
+        }
+
+        function helperLight(light = directionalLight, size = 1, color = '#ffffff') {
+            if (light.type === 'DirectionalLight') {
+                lightHelper = new THREE.DirectionalLightHelper(light, size, color);
+            }
+
+            if (light.type === 'PointLight') {
+                lightHelper = new THREE.PointLightHelper(light, size, color);
+            }
+
+            if (light.type === 'SpotLight') {
+                lightHelper = new THREE.SpotLightHelper(light, size, color);
+            }
+
+            if (light.type === 'HemisphereLight') {
+                lightHelper = new THREE.HemisphereLightHelper(light, size, color);
+            }
+
+            scene.add(lightHelper);
+        }
+
+        // Camera
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // Update uniforms
+            uniforms.uResolution.value.x = window.innerWidth;
+            uniforms.uResolution.value.y = window.innerHeight;
+        }
+
+    </script>
+
+</body>
+</html>
